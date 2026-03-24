@@ -1,21 +1,60 @@
+'use client'
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu"
+import { toast } from "sonner"
+
 
 export default function Page() {
   return (
-     <div>
-      Hello
-     </div>
+    <div className="flex flex-wrap justify-center gap-2">
+      <Button
+        variant="outline"
+        onClick={() =>
+          toast("Event has been created", { position: "top-left" })
+        }
+      >
+        Top Left
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() =>
+          toast("Event has been created", { position: "top-center" })
+        }
+      >
+        Top Center
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() =>
+          toast("Event has been created", { position: "top-right" })
+        }
+      >
+        Top Right
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() =>
+          toast("Event has been created", { position: "bottom-left" })
+        }
+      >
+        Bottom Left
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() =>
+          toast("Event has been created", { position: "bottom-center" })
+        }
+      >
+        Bottom Center
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() =>
+          toast("Event has been created", { position: "bottom-right" })
+        }
+      >
+        Bottom Right
+      </Button>
+    </div>
   )
 }
-
 
