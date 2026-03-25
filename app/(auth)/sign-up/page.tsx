@@ -26,11 +26,13 @@ export default function SignUpPage() {
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      userName: "",
-      email: "",
-      password: "",
-    },
+    // defaultValues
+defaultValues: {
+  userName: "",
+  email: "",
+  phone: "",
+  password: "",
+},
   })
 
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
@@ -74,7 +76,7 @@ export default function SignUpPage() {
               Create account
             </CardTitle>
             <CardDescription className="text-zinc-400">
-              Register to place or manage orders.
+              Register to place orders.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -117,6 +119,31 @@ export default function SignUpPage() {
                   </p>
                 )}
               </div>
+
+                {/* Phone */}
+<div className="space-y-1">
+  <Label htmlFor="phone" className="text-sm font-medium text-zinc-300">
+    Phone Number
+  </Label>
+  <div className="flex">
+    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-zinc-700 bg-zinc-700 text-zinc-400 text-sm">
+      +91
+    </span>
+    <Input
+      id="phone"
+      type="tel"
+      placeholder="98765 43210"
+      maxLength={10}
+      {...form.register("phone")}
+      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-500 focus:ring-amber-500/20 rounded-l-none"
+    />
+  </div>
+  {form.formState.errors.phone && (
+    <p className="text-xs text-red-400">
+      {form.formState.errors.phone.message}
+    </p>
+  )}
+</div>
 
               {/* Password */}
               <div className="space-y-1">

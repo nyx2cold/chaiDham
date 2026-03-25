@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     await dbConnect();
 
     const body = await request.json();
-    const { userName, email, password } = body;  // fixed: UserName → userName
+    const { userName, email, password,phone } = body;  // fixed: UserName → userName
 
     // Check if username already taken by verified user
     const existingUserVerifiedByUsername = await UserModel.findOne({
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
         // Update unverified user with new credentials
         const hashedPassword = await bcrypt.hash(password, 10);
         existingUserByEmail.userName = userName;  // fixed: UserName → userName
+        existingUserByEmail.phone = phone;
         existingUserByEmail.password = hashedPassword;
         existingUserByEmail.verifyCode = verifyCode;
         existingUserByEmail.verifyCodeExpire = verifyCodeExpire;
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
         userName,                  // fixed: UserName → userName
         email,
         password: hashedPassword,
+        phone,
         role: "user",              // added role
         verifyCode,
         verifyCodeExpire,

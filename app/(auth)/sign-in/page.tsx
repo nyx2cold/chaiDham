@@ -103,7 +103,7 @@ export default function SignInPage() {
                     Password
                   </Label>
                   
-                  <a  href="#"
+                  <a  href="/forgot-password"
                     className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
                   >
                     Forgot password?
@@ -131,7 +131,7 @@ export default function SignInPage() {
               </Button>
 
               {/* Google */}
-              <Button
+              {/* <Button
                 variant="outline"
                 type="button"
                 className="w-full border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all"
@@ -143,7 +143,7 @@ export default function SignInPage() {
                   />
                 </svg>
                 Sign in with Google
-              </Button>
+              </Button> */}
             </form>
 
             {/* Sign up link */}

@@ -42,7 +42,7 @@ export default function VerifyCodePage() {
 
     try {
       const response = await axios.post("/api/verify-code", {
-  email,  // ← correct key
+  email,  
   code: data.code,
 })
       toast.success(response.data.message, { id: toastId })

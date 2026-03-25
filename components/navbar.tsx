@@ -1,117 +1,174 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
+import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
+import { ShoppingCart, LogOut, User, LayoutDashboard, UtensilsCrossed, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const components: { title: string; href: string; description: string }[] = [
-  {
-    title: "Alert Dialog",
-    href: "/docs/primitives/alert-dialog",
-    description:
-      "A modal dialog that interrupts the user with important content and expects a response.",
-  },
-  {
-    title: "Hover Card",
-    href: "/docs/primitives/hover-card",
-    description:
-      "For sighted users to preview content available behind a link.",
-  },
-  {
-    title: "Progress",
-    href: "/docs/primitives/progress",
-    description:
-      "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
-  },
-  {
-    title: "Scroll-area",
-    href: "/docs/primitives/scroll-area",
-    description: "Visually or semantically separates content.",
-  },
-  {
-    title: "Tabs",
-    href: "/docs/primitives/tabs",
-    description:
-      "A set of layered sections of content—known as tab panels—that are displayed one at a time.",
-  },
-  {
-    title: "Tooltip",
-    href: "/docs/primitives/tooltip",
-    description:
-      "A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.",
-  },
-]
+export default function Navbar() {
+  const { data: session, status } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+  const isLoading = status === "loading";
 
-export default function navbar() {
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>Getting started</NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <ul className="w-96">
-              <ListItem href="/docs" title="Introduction">
-                Re-usable components built with Tailwind CSS.
-              </ListItem>
-              <ListItem href="/docs/installation" title="Installation">
-                How to install dependencies and structure your app.
-              </ListItem>
-              <ListItem href="/docs/primitives/typography" title="Typography">
-                Styles for headings, paragraphs, lists...etc
-              </ListItem>
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-        <NavigationMenuItem className="hidden md:flex">
-          <NavigationMenuTrigger>Components</NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <ul className="grid w-[400px] gap-2 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-              {components.map((component) => (
-                <ListItem
-                  key={component.title}
-                  title={component.title}
-                  href={component.href}
-                >
-                  {component.description}
-                </ListItem>
-              ))}
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="/docs">Docs</Link>
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
-  )
-}
+    <nav className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
 
-function ListItem({
-  title,
-  children,
-  href,
-  ...props
-}: React.ComponentPropsWithoutRef<"li"> & { href: string }) {
-  return (
-    <li {...props}>
-      <NavigationMenuLink asChild>
-        <Link href={href}>
-          <div className="flex flex-col gap-1 text-sm">
-            <div className="leading-none font-medium">{title}</div>
-            <div className="line-clamp-2 text-muted-foreground">{children}</div>
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 shadow-lg shadow-amber-900/40 group-hover:bg-amber-400 transition-colors">
+            <UtensilsCrossed className="h-4 w-4 text-zinc-950" />
           </div>
+          <span className="text-lg font-bold text-white tracking-tight">
+            Chai<span className="text-amber-500">Dham</span>
+          </span>
         </Link>
-      </NavigationMenuLink>
-    </li>
-  )
+
+        {/* Right side */}
+        <div className="flex items-center gap-3">
+
+          {/* Role-based nav link */}
+          {session && (
+            <Link
+              href={isAdmin ? "/dashboard" : "/menu"}
+              className="hidden sm:flex items-center gap-1.5 text-sm text-zinc-400 hover:text-amber-400 transition-colors"
+            >
+              {isAdmin ? (
+                <>
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </>
+              ) : (
+                <>
+                  <UtensilsCrossed className="h-4 w-4" />
+                  Menu
+                </>
+              )}
+            </Link>
+          )}
+
+          {/* Cart — only for users */}
+          {session && !isAdmin && (
+            <Link href="/cart">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 transition-colors"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-zinc-950">
+                  0
+                </span>
+              </Button>
+            </Link>
+          )}
+
+          {/* Auth state */}
+          {isLoading ? (
+            <div className="h-8 w-8 rounded-full bg-zinc-800 animate-pulse" />
+          ) : session ? (
+            // Profile dropdown
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 rounded-full outline-none ring-offset-zinc-950 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2">
+                  <Avatar className="h-8 w-8 border border-zinc-700">
+                    <AvatarFallback
+                      className={
+                        isAdmin
+                          ? "bg-red-500 text-white text-xs font-bold"
+                          : "bg-green-500 text-white text-xs font-bold"
+                      }
+                    >
+                      {isAdmin ? "A" : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden sm:block text-sm font-medium text-white">
+                    {session.user?.username}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                align="end"
+                className="w-52 bg-zinc-900 border-zinc-800 text-zinc-300"
+              >
+                <DropdownMenuLabel className="text-zinc-400 font-normal text-xs">
+                  {isAdmin && (
+                    <span className="inline-flex items-center mb-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+                      ADMIN
+                    </span>
+                  )}
+                  <p className="text-zinc-400 text-xs">Signed in as</p>
+                  <p className="text-white font-semibold text-sm truncate">
+                    {session.user?.username}
+                  </p>
+                </DropdownMenuLabel>
+
+                <DropdownMenuSeparator className="bg-zinc-800" />
+
+                {/* Role-based item */}
+                <DropdownMenuItem asChild className="hover:bg-zinc-800 hover:text-white cursor-pointer">
+                  <Link href={isAdmin ? "/dashboard" : "/menu"}>
+                    {isAdmin ? (
+                      <><LayoutDashboard className="mr-2 h-4 w-4 text-amber-400" />Dashboard</>
+                    ) : (
+                      <><UtensilsCrossed className="mr-2 h-4 w-4 text-amber-400" />Menu</>
+                    )}
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild className="hover:bg-zinc-800 hover:text-white cursor-pointer">
+  <Link href="/menu">
+    <UtensilsCrossed className="mr-2 h-4 w-4 text-amber-400" />
+    Menu
+  </Link>
+</DropdownMenuItem>
+
+                <DropdownMenuSeparator className="bg-zinc-800" />
+
+                <DropdownMenuItem
+                  onClick={() => signOut({ callbackUrl: "/sign-in" })}
+                  className="text-red-400 hover:bg-zinc-800 hover:text-red-300 cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            // Logged out
+            <div className="flex items-center gap-2">
+              <Link href="/sign-in">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+                >
+                  Sign in
+                </Button>
+              </Link>
+              <Link href="/sign-up">
+                <Button
+                  size="sm"
+                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-medium shadow-lg shadow-amber-900/30"
+                >
+                  Sign up
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
 }

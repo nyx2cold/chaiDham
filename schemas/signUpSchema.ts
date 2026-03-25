@@ -11,5 +11,8 @@ export const  userNameValidation = z
 export const signUpSchema = z.object({
   userName: userNameValidation,
   email: z.email({ message: "Please provide a valid email" }),
+   phone: z
+    .string()
+    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
 });

@@ -4,6 +4,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner"
+import Navbar from "@/components/navbar";
+import Providers from "@/components/Providers";
 
 const figtree = Figtree({subsets:['latin'],variable:'--font-sans'})
 
@@ -24,8 +26,12 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", figtree.variable)}
     >
       <body>
+        <Providers>
+        <Navbar />
+
         <ThemeProvider>{children}</ThemeProvider>
           <Toaster  richColors position="top-center" />
+          </Providers>
       </body>
     </html>
   )
