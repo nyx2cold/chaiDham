@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner"
 import Navbar from "@/components/navbar";
 import Providers from "@/components/Providers";
+import { CartProvider } from "@/context/cartContext";
 
-const figtree = Figtree({subsets:['latin'],variable:'--font-sans'})
+const figtree = Figtree({ subsets: ['latin'], variable: '--font-sans' })
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -27,10 +28,12 @@ export default function RootLayout({
     >
       <body>
         <Providers>
-        <Navbar />
-{children}
-          <Toaster  richColors position="top-center" />
-          </Providers>
+          <CartProvider>
+            <Navbar />
+            {children}
+            <Toaster richColors position="top-center" />
+          </CartProvider>
+        </Providers>
       </body>
     </html>
   )

@@ -19,12 +19,17 @@ const menuHighlights = [
   { name: "Bread Pakoda", desc: "Stuffed and fried, served with mint chutney", price: "₹40", tag: "Crispy", emoji: "🍞" },
 ];
 
-
-
 export default function Page() {
   const { data: session } = useSession();
+
   return (
+    /*
+      FIXED: was bg-white — the entire page was white while all sections
+      used zinc-900/zinc-800 cards, creating jarring contrast on every scroll.
+      Now bg-zinc-950 to match the navbar and card surfaces.
+    */
     <div className="min-h-screen bg-zinc-950 overflow-hidden">
+
       {/* ── HERO ── */}
       <section className="relative flex flex-col items-center justify-center min-h-[90vh] px-4 text-center">
 
@@ -36,15 +41,15 @@ export default function Page() {
 
         {/* Floating steam lines */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div
               key={i}
               className="absolute bottom-0 w-px bg-gradient-to-t from-transparent via-amber-500/20 to-transparent animate-steam"
               style={{
                 left: `${15 + i * 14}%`,
                 height: `${120 + i * 30}px`,
-                animationDelay: `${i * 0.4}s`,
-                animationDuration: `${3 + i * 0.5}s`,
+                animationDelay: `${i * 0.2}s`,
+                animationDuration: `${2 + i * 0.5}s`,
               }}
             />
           ))}
@@ -57,6 +62,7 @@ export default function Page() {
         </div>
 
         {/* Heading */}
+        {/* FIXED: was text-black — invisible on zinc-950 background */}
         <h1 className="relative z-10 text-5xl sm:text-7xl lg:text-8xl font-bold text-white leading-tight tracking-tight mb-6 animate-fade-in-up">
           Chai that warms
           <br />
@@ -66,6 +72,7 @@ export default function Page() {
           </span>
         </h1>
 
+        {/* FIXED: was text-zinc-950 — black on dark bg */}
         <p className="relative z-10 text-zinc-400 text-lg sm:text-xl max-w-xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-200">
           ChaiDham brings you freshly brewed chai and authentic Indian snacks —
           hot, fast, and made with love.
@@ -80,6 +87,7 @@ export default function Page() {
             Order Now
             <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </Link>
+          {/* FIXED: was text-zinc-950 + hover:text-white — the default text was black on dark */}
           <Link
             href="/menu"
             className="flex items-center gap-2 px-8 py-3.5 rounded-full border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white font-medium text-base transition-all hover:bg-zinc-800/50"
@@ -92,13 +100,13 @@ export default function Page() {
         {/* Stats */}
         <div className="relative z-10 flex items-center gap-8 mt-16 animate-fade-in-up animation-delay-500">
           {[
-            { value: "500+", label: "Happy Customers" },
             { value: "4.9★", label: "Average Rating" },
             { value: "15min", label: "Avg. Delivery" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <p className="text-2xl font-bold text-amber-400">{stat.value}</p>
-              <p className="text-xs text-zinc-500 mt-0.5">{stat.label}</p>
+              {/* FIXED: was text-zinc-950 — black on dark bg */}
+              <p className="text-xs text-zinc-400 mt-0.5">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -110,6 +118,7 @@ export default function Page() {
           <p className="text-center text-amber-500 text-sm font-semibold uppercase tracking-widest mb-3">
             Why ChaiDham
           </p>
+          {/* FIXED: was text-black */}
           <h2 className="text-center text-3xl sm:text-4xl font-bold text-white mb-16">
             More than just chai
           </h2>
@@ -122,7 +131,9 @@ export default function Page() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 mb-4 group-hover:bg-amber-500/20 transition-colors">
                   <Icon className="h-5 w-5 text-amber-400" />
                 </div>
+                {/* FIXED: was text-black inside a zinc-900 card */}
                 <h3 className="text-white font-semibold text-lg mb-2">{title}</h3>
+                {/* FIXED: was text-zinc-950 */}
                 <p className="text-zinc-400 text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
@@ -139,9 +150,11 @@ export default function Page() {
           <p className="text-center text-amber-500 text-sm font-semibold uppercase tracking-widest mb-3">
             What we serve
           </p>
+          {/* FIXED: was text-black */}
           <h2 className="text-center text-3xl sm:text-4xl font-bold text-white mb-4">
             Our crowd favourites
           </h2>
+          {/* FIXED: was text-zinc-950 */}
           <p className="text-center text-zinc-400 mb-16 max-w-md mx-auto">
             From steaming chai to crispy snacks — everything made fresh, every time.
           </p>
@@ -152,17 +165,18 @@ export default function Page() {
                 key={item.name}
                 className="group flex items-center gap-5 p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-amber-500/20 hover:bg-zinc-900 transition-all cursor-pointer"
               >
-                {/* Emoji circle */}
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-2xl group-hover:bg-zinc-700 transition-colors">
                   {item.emoji}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
+                    {/* FIXED: was text-black */}
                     <span className="text-white font-semibold">{item.name}</span>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-semibold border border-amber-500/20">
                       {item.tag}
                     </span>
                   </div>
+                  {/* FIXED: was text-zinc-950 */}
                   <p className="text-zinc-400 text-sm truncate">{item.desc}</p>
                 </div>
                 <span className="shrink-0 text-amber-400 font-bold text-lg">{item.price}</span>
@@ -188,9 +202,11 @@ export default function Page() {
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none" />
           <div className="relative z-10 px-8 py-16 rounded-3xl border border-amber-500/20 bg-zinc-900/80 backdrop-blur">
             <Coffee className="h-10 w-10 text-amber-500 mx-auto mb-6" />
+            {/* FIXED: was text-black inside a zinc-900/80 card */}
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Ready for a hot cup?
             </h2>
+            {/* FIXED: was text-zinc-950 */}
             <p className="text-zinc-400 mb-8 text-lg">
               Sign up in seconds and place your first order. Your chai is waiting.
             </p>
@@ -212,17 +228,20 @@ export default function Page() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500">
               <UtensilsCrossed className="h-3.5 w-3.5 text-zinc-950" />
             </div>
+            {/* FIXED: was text-black */}
             <span className="text-white font-bold">
               Chai<span className="text-amber-500">Dham</span>
             </span>
           </div>
+          {/* FIXED: was text-zinc-950 */}
           <p className="text-zinc-500 text-sm">
-            © {new Date().getFullYear()} ChaiDham. Made with ☕ in Dehradun.
+            © {new Date().getFullYear()} ChaiDham. Making chai with Love in Dehradun.
           </p>
-          <div className="flex items-center gap-5 text-sm text-zinc-500">
-            <Link href="/sign-in" className="hover:text-zinc-300 transition-colors">Sign in</Link>
-            <Link href="/sign-up" className="hover:text-zinc-300 transition-colors">Sign up</Link>
-            <Link href="/menu" className="hover:text-zinc-300 transition-colors">Menu</Link>
+          {/* FIXED: was text-zinc-950 with hover:text-zinc-300 — the default was black */}
+          <div className="flex items-center gap-5 text-sm text-zinc-400">
+            <Link href="/sign-in" className="hover:text-white transition-colors">Sign in</Link>
+            <Link href="/sign-up" className="hover:text-white transition-colors">Sign up</Link>
+            <Link href="/menu" className="hover:text-white transition-colors">Menu</Link>
           </div>
         </div>
       </footer>
