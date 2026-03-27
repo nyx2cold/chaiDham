@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { ShoppingCart, LogOut, User, LayoutDashboard, UtensilsCrossed, ChevronDown } from "lucide-react";
+import { ShoppingCart, LogOut, User, Home, LayoutDashboard, UtensilsCrossed, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -36,25 +36,7 @@ export default function Navbar() {
         {/* Right side */}
         <div className="flex items-center gap-3">
 
-          {/* Role-based nav link */}
-          {session && (
-            <Link
-              href={isAdmin ? "/dashboard" : "/menu"}
-              className="hidden sm:flex items-center gap-1.5 text-sm text-zinc-400 hover:text-amber-400 transition-colors"
-            >
-              {isAdmin ? (
-                <>
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </>
-              ) : (
-                <>
-                  <UtensilsCrossed className="h-4 w-4" />
-                  Menu
-                </>
-              )}
-            </Link>
-          )}
+
 
           {/* Cart — only for users */}
           {session && !isAdmin && (
@@ -118,21 +100,39 @@ export default function Navbar() {
 
                 {/* Role-based item */}
                 <DropdownMenuItem asChild className="hover:bg-zinc-800 hover:text-white cursor-pointer">
-                  <Link href={isAdmin ? "/dashboard" : "/menu"}>
-                    {isAdmin ? (
-                      <><LayoutDashboard className="mr-2 h-4 w-4 text-amber-400" />Dashboard</>
-                    ) : (
-                      <><UtensilsCrossed className="mr-2 h-4 w-4 text-amber-400" />Menu</>
-                    )}
+                  <Link href="/">
+                    <Home className="mr-2 h-4 w-4 text-amber-400" />
+                    Home
                   </Link>
                 </DropdownMenuItem>
 
+                {/* Profile */}
                 <DropdownMenuItem asChild className="hover:bg-zinc-800 hover:text-white cursor-pointer">
-  <Link href="/menu">
-    <UtensilsCrossed className="mr-2 h-4 w-4 text-amber-400" />
-    Menu
-  </Link>
-</DropdownMenuItem>
+                  <Link href="/profile">
+                    <User className="mr-2 h-4 w-4 text-amber-400" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+
+                {/* Admin only: Dashboard */}
+                {isAdmin && (
+                  <DropdownMenuItem asChild className="hover:bg-zinc-800 hover:text-white cursor-pointer">
+                    <Link href="/dashboard">
+                      <LayoutDashboard className="mr-2 h-4 w-4 text-amber-400" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
+                {/* User only: Menu */}
+                {!isAdmin && (
+                  <DropdownMenuItem asChild className="hover:bg-zinc-800 hover:text-white cursor-pointer">
+                    <Link href="/menu">
+                      <UtensilsCrossed className="mr-2 h-4 w-4 text-amber-400" />
+                      Menu
+                    </Link>
+                  </DropdownMenuItem>
+                )}
 
                 <DropdownMenuSeparator className="bg-zinc-800" />
 
