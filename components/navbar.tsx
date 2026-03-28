@@ -172,6 +172,15 @@ export default function Navbar() {
 
                   {isAdmin && (
                     <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
+                      <Link href="/menu" className="flex items-center gap-2.5">
+                        <UtensilsCrossed className="h-4 w-4 text-amber-400 shrink-0" />
+                        <span>Menu</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {isAdmin && (
+                    <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
                       <Link href="/dashboard" className="flex items-center gap-2.5">
                         <LayoutDashboard className="h-4 w-4 text-amber-400 shrink-0" />
                         <span>Dashboard</span>
@@ -179,14 +188,7 @@ export default function Navbar() {
                     </DropdownMenuItem>
                   )}
 
-                  {!isAdmin && (
-                    <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
-                      <Link href="/menu" className="flex items-center gap-2.5">
-                        <UtensilsCrossed className="h-4 w-4 text-amber-400 shrink-0" />
-                        <span>Menu</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
+
 
                   <DropdownMenuSeparator className="bg-zinc-800 -mx-1.5 my-1" />
 
