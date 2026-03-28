@@ -5,6 +5,7 @@ import axios from "axios";
 import { Search, Plus, Minus, Loader2, UtensilsCrossed, X } from "lucide-react";
 import { useCart } from "@/context/cartContext";
 import { toast } from "sonner";
+import { CafeClosedBanner } from "@/components/menu/CafeClosedBanner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface MenuItem {
@@ -205,6 +206,7 @@ export default function MenuPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 px-4 py-10">
+        {/* <CafeClosedBanner /> */}
         <div className="mx-auto max-w-6xl space-y-6">
           <div className="flex gap-3">
             <div className="h-10 flex-1 rounded-xl bg-zinc-800/60 animate-pulse" />
