@@ -101,7 +101,7 @@ export default function Page() {
         <div className="relative z-10 flex items-center gap-8 mt-16 animate-fade-in-up animation-delay-500">
           {[
             { value: "4.9★", label: "Average Rating" },
-            { value: "15min", label: "Avg. Delivery" },
+            { value: "15min", label: "Avg. cooking time" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <p className="text-2xl font-bold text-amber-400">{stat.value}</p>
@@ -143,6 +143,12 @@ export default function Page() {
 
       {/* ── MENU HIGHLIGHTS ── */}
       <section className="py-24 px-4 relative">
+
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-amber-500/10 blur-[120px]" />
+          <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] rounded-full bg-amber-600/5 blur-[80px]" />
+        </div>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-amber-500/5 blur-[100px]" />
         </div>
@@ -160,6 +166,21 @@ export default function Page() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Floating steam lines */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute bottom-0 w-px bg-gradient-to-t from-transparent via-amber-500/20 to-transparent animate-steam"
+                  style={{
+                    left: `${15 + i * 14}%`,
+                    height: `${120 + i * 30}px`,
+                    animationDelay: `${i * 0.2}s`,
+                    animationDuration: `${2 + i * 0.5}s`,
+                  }}
+                />
+              ))}
+            </div>
             {menuHighlights.map((item) => (
               <div
                 key={item.name}
@@ -200,10 +221,31 @@ export default function Page() {
       <section className="py-24 px-4">
         <div className="max-w-3xl mx-auto text-center relative">
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none" />
+
           <div className="relative z-10 px-8 py-16 rounded-3xl border border-amber-500/20 bg-zinc-900/80 backdrop-blur">
             <Coffee className="h-10 w-10 text-amber-500 mx-auto mb-6" />
             {/* FIXED: was text-black inside a zinc-900/80 card */}
+            {/* Floating steam lines */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute bottom-0 w-px bg-gradient-to-t from-transparent via-amber-500/20 to-transparent animate-steam"
+                  style={{
+                    left: `${15 + i * 14}%`,
+                    height: `${120 + i * 30}px`,
+                    animationDelay: `${i * 0.2}s`,
+                    animationDuration: `${2 + i * 0.5}s`,
+                  }}
+                />
+              ))}
+            </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              {/* Background glow */}
+              {/* <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-amber-500/10 blur-[120px]" />
+                <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] rounded-full bg-amber-600/5 blur-[80px]" />
+              </div> */}
               Ready for a hot cup?
             </h2>
             {/* FIXED: was text-zinc-950 */}
