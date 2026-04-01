@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import dns from "dns";
 
 type ConnectionObject = {
   isConnected?: number;
@@ -11,6 +12,13 @@ async function dbConnect(): Promise<void> {
   if (connection.isConnected) {
     console.log("Already connected to database");
     return;
+  }
+
+  // Workaround for DNS lookup failures (querySrv ECONNREFUSED) on Windows
+  try {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+  } catch (err) {
+    console.warn("Failed to set DNS servers:", err);
   }
 
   const uri = process.env.MONGODB_URI!;

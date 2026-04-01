@@ -256,7 +256,7 @@ export default function Page() {
               href={session ? "/menu" : "/sign-up"}
               className="group inline-flex items-center gap-2 px-10 py-4 rounded-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-base transition-all shadow-lg shadow-amber-900/40 hover:scale-105"
             >
-              Get started — it's free
+              Log In / Sign Up
               <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>

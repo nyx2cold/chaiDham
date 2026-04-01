@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import {
   ShoppingCart, LogOut, User, Home, LayoutDashboard,
   UtensilsCrossed, ChevronDown, X, Trash2, Plus, Minus,
@@ -30,6 +31,7 @@ type OrderType = "dine-in" | "takeaway";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const isAdmin = session?.user?.role === "admin";
   const isLoading = status === "loading";
 
@@ -156,21 +158,28 @@ export default function Navbar() {
 
                   <DropdownMenuSeparator className="bg-zinc-800 -mx-1.5 my-1" />
 
-                  <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
-                    <Link href="/" className="flex items-center gap-2.5">
-                      <Home className="h-4 w-4 text-amber-400 shrink-0" />
-                      <span>Home</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {/* Home — hidden when already on "/" (admin & user) */}
+                  {pathname !== "/" && (
+                    <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
+                      <Link href="/" className="flex items-center gap-2.5">
+                        <Home className="h-4 w-4 text-amber-400 shrink-0" />
+                        <span>Home</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
 
-                  <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
-                    <Link href="/profile" className="flex items-center gap-2.5">
-                      <User className="h-4 w-4 text-amber-400 shrink-0" />
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {/* Profile — hidden when already on "/profile" (admin & user) */}
+                  {pathname !== "/profile" && (
+                    <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
+                      <Link href="/profile" className="flex items-center gap-2.5">
+                        <User className="h-4 w-4 text-amber-400 shrink-0" />
+                        <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
 
-                  {isAdmin && (
+                  {/* Menu — visible to BOTH admin & user, hidden when already on "/menu" */}
+                  {pathname !== "/menu" && (
                     <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
                       <Link href="/menu" className="flex items-center gap-2.5">
                         <UtensilsCrossed className="h-4 w-4 text-amber-400 shrink-0" />
@@ -179,7 +188,8 @@ export default function Navbar() {
                     </DropdownMenuItem>
                   )}
 
-                  {isAdmin && (
+                  {/* Dashboard — admin only, hidden when already on "/dashboard" */}
+                  {isAdmin && pathname !== "/dashboard" && (
                     <DropdownMenuItem asChild className="rounded-lg px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors">
                       <Link href="/dashboard" className="flex items-center gap-2.5">
                         <LayoutDashboard className="h-4 w-4 text-amber-400 shrink-0" />
@@ -187,8 +197,6 @@ export default function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-
-
 
                   <DropdownMenuSeparator className="bg-zinc-800 -mx-1.5 my-1" />
 
@@ -270,7 +278,6 @@ export default function Navbar() {
         {/* ── Items ── */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
           {cartItems.length === 0 ? (
-            /* Empty state */
             <div className="flex flex-col items-center justify-center h-full gap-4 py-20 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full
                 bg-white/[0.04] border border-white/[0.08]
@@ -297,13 +304,9 @@ export default function Navbar() {
                   border border-white/[0.06] hover:border-white/[0.1]
                   transition-all duration-200"
               >
-                {/* Card inner gloss */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent pointer-events-none rounded-2xl" />
 
-                {/* Main row */}
                 <div className="flex gap-3 p-3 relative">
-
-                  {/* Thumbnail */}
                   <div className="h-14 w-14 flex-shrink-0 rounded-xl
                     bg-white/[0.06] border border-white/[0.06]
                     flex items-center justify-center overflow-hidden">
@@ -314,7 +317,6 @@ export default function Navbar() {
                     )}
                   </div>
 
-                  {/* Name + price + qty */}
                   <div className="flex flex-1 flex-col gap-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{item.name}</p>
                     <p className="text-xs font-medium text-amber-400">₹{item.price}</p>
@@ -343,7 +345,6 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  {/* Delete + line total */}
                   <div className="flex flex-col items-end justify-between flex-shrink-0">
                     <button
                       onClick={() => removeFromCart(item._id)}
@@ -360,7 +361,6 @@ export default function Navbar() {
                   </div>
                 </div>
 
-                {/* ── Per-item order details ── */}
                 <div className="border-t border-white/[0.05]">
                   <button
                     onClick={() => toggleNotes(item._id)}
@@ -372,12 +372,10 @@ export default function Navbar() {
                       {itemNotes[item._id] ? "Edit order details" : "Add order details"}
                     </span>
                     <ChevronDown
-                      className={`h-3.5 w-3.5 transition-transform duration-300 ${expandedNotes[item._id] ? "rotate-180" : ""
-                        }`}
+                      className={`h-3.5 w-3.5 transition-transform duration-300 ${expandedNotes[item._id] ? "rotate-180" : ""}`}
                     />
                   </button>
 
-                  {/* Smooth slide-down panel — max-height transition */}
                   <div
                     style={{
                       maxHeight: expandedNotes[item._id] ? "120px" : "0px",
@@ -401,7 +399,6 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  {/* Collapsed note preview — only when closed and note exists */}
                   {!expandedNotes[item._id] && itemNotes[item._id] && (
                     <p className="px-3 pb-2.5 text-[11px] text-zinc-500 italic truncate">
                       "{itemNotes[item._id]}"
@@ -416,15 +413,12 @@ export default function Navbar() {
         {/* ── Footer ── */}
         {cartItems.length > 0 && (
           <div className="relative px-4 pt-3 pb-5 space-y-3 border-t border-white/[0.06] bg-white/[0.015]">
-
-            {/* Subtotal row */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-zinc-400">Subtotal</span>
               <span className="text-base font-bold text-white">₹{cartTotal.toFixed(2)}</span>
             </div>
             <p className="text-[11px] text-zinc-600">Taxes and delivery calculated at checkout</p>
 
-            {/* ── Dine In / Takeaway toggle ── */}
             <div className="flex rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03]">
               <button
                 onClick={() => setOrderType("dine-in")}
@@ -448,7 +442,6 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* ── Checkout button ── */}
             <button
               onClick={() => setDrawerOpen(false)}
               className="w-full py-3 rounded-xl font-semibold text-sm text-zinc-950

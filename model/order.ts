@@ -1,75 +1,64 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IOrderItem {
-    name: string;
-    qty: number;
-    price: number;
-}
-
 export interface IOrder extends Document {
-    items: IOrderItem[];
-    total: number;
-    type: "dine-in" | "takeaway";
-    customerName: string;
-    customerEmail: string;
-    customerId: mongoose.Types.ObjectId;
-    status: "pending" | "preparing" | "ready" | "completed" | "cancelled";
-    createdAt: Date;
-    updatedAt: Date;
+  orderNumber: number;
+  customer: {
+    userId: string;
+    name: string;
+    email: string;
+  };
+  items: {
+    menuItemId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    orderDetails?: string;
+  }[];
+  total: number;
+  type: "dine-in" | "takeaway";
+  status: "pending" | "preparing" | "ready" | "completed" | "cancelled";
+  createdAt: Date;
+  updatedAt: Date;
 }
-
-const OrderItemSchema = new Schema<IOrderItem>(
-    {
-        name: { type: String, required: true },
-        qty: { type: Number, required: true, min: 1 },
-        price: { type: Number, required: true },
-    },
-    { _id: false }
-);
 
 const OrderSchema = new Schema<IOrder>(
-    {
-        items: {
-            type: [OrderItemSchema],
-            required: true,
-            validate: {
-                validator: (v: IOrderItem[]) => v.length > 0,
-                message: "Order must have at least one item",
-            },
-        },
-        total: {
-            type: Number,
-            required: true,
-        },
-        type: {
-            type: String,
-            enum: ["dine-in", "takeaway"],
-            required: true,
-        },
-        customerName: {
-            type: String,
-            required: [true, "Customer name is required"],
-        },
-        customerEmail: {
-            type: String,
-            required: [true, "Customer email is required"],
-        },
-        customerId: {
-            type: Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
-        status: {
-            type: String,
-            enum: ["pending", "preparing", "ready", "completed", "cancelled"],
-            default: "pending",
-        },
+  {
+    orderNumber: { type: Number, unique: true },
+    customer: {
+      userId: { type: String, required: true },
+      name: { type: String, required: true },
+      email: { type: String, required: true },
     },
-    { timestamps: true }
+    items: [
+      {
+        menuItemId: String,
+        name: String,
+        price: Number,
+        quantity: Number,
+        orderDetails: String,
+      },
+    ],
+    total: { type: Number, required: true },
+    type: { type: String, enum: ["dine-in", "takeaway"], required: true },
+    status: {
+      type: String,
+      enum: ["pending", "preparing", "ready", "completed", "cancelled"],
+      default: "pending",
+    },
+  },
+  { timestamps: true }
 );
 
-const OrderModel =
-    (mongoose.models.Order as mongoose.Model<IOrder>) ||
-    mongoose.model<IOrder>("Order", OrderSchema);
+// Auto-increment orderNumber
+OrderSchema.pre("save", async function () {
+  if (this.isNew) {
+    const last = await mongoose
+      .model("Order")
+      .findOne()
+      .sort({ orderNumber: -1 });
+    this.orderNumber = last ? last.orderNumber + 1 : 1000;
+  }
+});
 
-export default OrderModel;
+export default mongoose.models.Order ||
+  mongoose.model<IOrder>("Order", OrderSchema);

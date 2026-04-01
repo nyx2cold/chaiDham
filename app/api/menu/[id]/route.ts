@@ -1,3 +1,4 @@
+// This page is used to delete and update the menu items
 // app/api/menu/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";

@@ -35,10 +35,11 @@ function VegBadge({ isVeg }: { isVeg: boolean }) {
   return (
     <div
       title={isVeg ? "Vegetarian" : "Non-vegetarian"}
-      className={`flex h-4 w-4 items-center justify-center rounded-sm border-2 flex-shrink-0 ${isVeg ? "border-green-500" : "border-red-500"
-        }`}
+      className={`flex h-5 w-5 items-center justify-center rounded-sm border-2 flex-shrink-0
+        backdrop-blur-sm bg-black/30
+        ${isVeg ? "border-green-500" : "border-red-500"}`}
     >
-      <div className={`h-2 w-2 rounded-full ${isVeg ? "bg-green-500" : "bg-red-500"}`} />
+      <div className={`h-2 w-2 rounded-full ${isVeg ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]"}`} />
     </div>
   );
 }
@@ -59,7 +60,8 @@ function ItemImage({ src, name }: { src: string; name: string }) {
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-zinc-800/80">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1.5
+      bg-gradient-to-br from-zinc-800/60 via-zinc-900/80 to-zinc-950/60">
       <UtensilsCrossed className="h-7 w-7 text-zinc-600" />
       <span className="text-[10px] text-zinc-600 font-medium tracking-wide">Photo coming soon</span>
     </div>
@@ -115,7 +117,6 @@ export default function MenuPage() {
 
   const getQty = (id: string) => cartItems.find((i) => i._id === id)?.quantity ?? 0;
 
-  // Fetch
   useEffect(() => {
     async function fetchMenu() {
       try {
@@ -130,7 +131,6 @@ export default function MenuPage() {
     fetchMenu();
   }, []);
 
-  // Bump animKey whenever filters change so cards re-animate
   const handleCategoryChange = (key: string) => {
     setActiveCategory(key);
     setAnimKey(`${key}-${Date.now()}`);
@@ -146,7 +146,6 @@ export default function MenuPage() {
     setAnimKey(`search-${Date.now()}`);
   };
 
-  // Filtered
   const filtered = useMemo(() => {
     return items.filter((item) => {
       const matchesCategory = activeCategory === "all" || item.category === activeCategory;
@@ -161,7 +160,6 @@ export default function MenuPage() {
     });
   }, [items, activeCategory, search, vegFilter]);
 
-  // Grouped
   const grouped = useMemo(() => {
     if (activeCategory !== "all") return { [activeCategory]: filtered };
     const groups: Record<string, MenuItem[]> = {};
@@ -206,28 +204,27 @@ export default function MenuPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 px-4 py-10">
-        {/* <CafeClosedBanner /> */}
         <div className="mx-auto max-w-6xl space-y-6">
           <div className="flex gap-3">
-            <div className="h-10 flex-1 rounded-xl bg-zinc-800/60 animate-pulse" />
-            <div className="h-10 w-32 rounded-xl bg-zinc-800/60 animate-pulse" />
+            <div className="h-10 flex-1 rounded-xl bg-white/[0.05] border border-white/[0.07] animate-pulse" />
+            <div className="h-10 w-36 rounded-xl bg-white/[0.05] border border-white/[0.07] animate-pulse" />
           </div>
           <div className="flex gap-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-9 w-24 rounded-full bg-zinc-800/60 animate-pulse" />
+              <div key={i} className="h-9 w-24 rounded-full bg-white/[0.05] border border-white/[0.07] animate-pulse" />
             ))}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-2xl bg-zinc-900/60 border border-zinc-800 overflow-hidden animate-pulse">
-                <div className="h-40 bg-zinc-800/80" />
+              <div key={i} className="rounded-2xl bg-white/[0.04] border border-white/[0.07] overflow-hidden animate-pulse">
+                <div className="h-40 bg-white/[0.04]" />
                 <div className="p-3 space-y-2.5">
-                  <div className="h-3.5 bg-zinc-800 rounded-lg w-3/4" />
-                  <div className="h-3 bg-zinc-800 rounded-lg w-full" />
-                  <div className="h-3 bg-zinc-800 rounded-lg w-2/3" />
+                  <div className="h-3.5 bg-white/[0.06] rounded-lg w-3/4" />
+                  <div className="h-3 bg-white/[0.04] rounded-lg w-full" />
+                  <div className="h-3 bg-white/[0.04] rounded-lg w-2/3" />
                   <div className="flex justify-between items-center pt-1">
-                    <div className="h-4 bg-zinc-800 rounded-lg w-10" />
-                    <div className="h-8 w-8 bg-zinc-800 rounded-lg" />
+                    <div className="h-4 bg-white/[0.06] rounded-lg w-10" />
+                    <div className="h-8 w-8 bg-white/[0.06] rounded-lg" />
                   </div>
                 </div>
               </div>
@@ -242,13 +239,15 @@ export default function MenuPage() {
     <div className="min-h-screen bg-zinc-950">
 
       {/* ── Sticky filter bar ── */}
-      <div className="sticky top-16 z-30 border-b border-white/[0.05] bg-zinc-950/90 backdrop-blur-xl">
+      <div className="sticky top-16 z-30 border-b border-white/[0.05]
+        bg-zinc-950/70 backdrop-blur-2xl
+        shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_-1px_0_rgba(255,255,255,0.04)]">
         <div className="mx-auto max-w-6xl px-4 py-3 space-y-3">
 
           {/* Row 1: search + veg filter */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
 
-            {/* Search */}
+            {/* Glass search bar */}
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
               <input
@@ -257,38 +256,49 @@ export default function MenuPage() {
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full h-10 pl-9 pr-9 rounded-xl text-sm
-                  bg-white/[0.05] border border-white/[0.08]
+                  bg-white/[0.06] backdrop-blur-md
+                  border border-white/[0.10]
                   text-white placeholder:text-zinc-500
-                  focus:outline-none focus:border-amber-500/40 focus:bg-white/[0.07]
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_2px_8px_rgba(0,0,0,0.25)]
+                  focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.09]
                   transition-all duration-200"
               />
               {search && (
                 <button
                   onClick={() => handleSearchChange("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full
+                    bg-white/[0.08] border border-white/[0.10]
+                    text-zinc-400 hover:text-white
+                    backdrop-blur-sm transition-all duration-150"
                 >
                   <X className="h-3 w-3" />
                 </button>
               )}
             </div>
 
-            {/* Veg filter */}
-            <div className="flex gap-1.5 flex-shrink-0 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+            {/* Glass veg filter */}
+            <div className="flex gap-1 flex-shrink-0 p-1 rounded-xl
+              bg-white/[0.04] backdrop-blur-md
+              border border-white/[0.08]
+              shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               {(["all", "veg", "nonveg"] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => handleVegChange(v)}
                   className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-xs font-semibold transition-all duration-200 ${vegFilter === v
                     ? v === "veg"
-                      ? "bg-green-500/20 text-green-400 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.3)]"
+                      ? "bg-green-500/20 text-green-400 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.3),0_0_10px_rgba(34,197,94,0.1)]"
                       : v === "nonveg"
-                        ? "bg-red-500/20 text-red-400 shadow-[inset_0_0_0_1px_rgba(239,68,68,0.3)]"
-                        : "bg-amber-500/20 text-amber-400 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.3)]"
-                    : "text-zinc-500 hover:text-zinc-300"
+                        ? "bg-red-500/20 text-red-400 shadow-[inset_0_0_0_1px_rgba(239,68,68,0.3),0_0_10px_rgba(239,68,68,0.1)]"
+                        : "bg-amber-500/20 text-amber-400 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.3),0_0_10px_rgba(245,158,11,0.1)]"
+                    : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"
                     }`}
                 >
                   {v !== "all" && (
-                    <span className={`h-1.5 w-1.5 rounded-full ${v === "veg" ? "bg-green-500" : "bg-red-500"}`} />
+                    <span className={`h-1.5 w-1.5 rounded-full ${v === "veg"
+                      ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.7)]"
+                      : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.7)]"
+                      }`} />
                   )}
                   {v === "all" ? "All" : v === "veg" ? "Veg" : "Non-veg"}
                 </button>
@@ -303,8 +313,8 @@ export default function MenuPage() {
                 key={cat.key}
                 onClick={() => handleCategoryChange(cat.key)}
                 className={`flex items-center gap-1.5 px-4 h-8 rounded-full text-xs font-semibold flex-shrink-0 transition-all duration-200 ${activeCategory === cat.key
-                  ? "bg-amber-500 text-zinc-950 shadow-[0_0_16px_rgba(245,158,11,0.25)]"
-                  : "bg-white/[0.04] border border-white/[0.07] text-zinc-400 hover:text-white hover:bg-white/[0.08]"
+                  ? "bg-amber-500/90 text-zinc-950 shadow-[0_0_18px_rgba(245,158,11,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-sm"
+                  : "bg-white/[0.05] backdrop-blur-sm border border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.09] hover:border-white/[0.14] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
                   }`}
               >
                 <span>{cat.emoji}</span>
@@ -323,7 +333,11 @@ export default function MenuPage() {
           <div className="flex flex-wrap items-center gap-2 mb-6">
             <span className="text-xs text-zinc-600 font-medium">Filters:</span>
             {activeCategory !== "all" && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                bg-amber-500/[0.08] backdrop-blur-sm
+                border border-amber-500/[0.20]
+                text-amber-400 text-xs font-medium
+                shadow-[inset_0_1px_0_rgba(245,158,11,0.1)]">
                 {getCategoryEmoji(activeCategory)} {getCategoryLabel(activeCategory)}
                 <button onClick={() => handleCategoryChange("all")} className="hover:text-amber-200 transition-colors">
                   <X className="h-3 w-3" />
@@ -331,9 +345,9 @@ export default function MenuPage() {
               </span>
             )}
             {vegFilter !== "all" && (
-              <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${vegFilter === "veg"
-                ? "bg-green-500/10 border-green-500/20 text-green-400"
-                : "bg-red-500/10 border-red-500/20 text-red-400"
+              <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${vegFilter === "veg"
+                ? "bg-green-500/[0.08] border-green-500/[0.20] text-green-400"
+                : "bg-red-500/[0.08] border-red-500/[0.20] text-red-400"
                 }`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${vegFilter === "veg" ? "bg-green-500" : "bg-red-500"}`} />
                 {vegFilter === "veg" ? "Veg" : "Non-veg"}
@@ -343,7 +357,11 @@ export default function MenuPage() {
               </span>
             )}
             {search && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-zinc-400 text-xs font-medium">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                bg-white/[0.05] backdrop-blur-sm
+                border border-white/[0.10]
+                text-zinc-400 text-xs font-medium
+                shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                 "{search}"
                 <button onClick={() => handleSearchChange("")} className="opacity-60 hover:opacity-100 transition-opacity">
                   <X className="h-3 w-3" />
@@ -359,9 +377,15 @@ export default function MenuPage() {
         {/* Empty state */}
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04] border border-white/[0.07]">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl
+              bg-white/[0.05] backdrop-blur-md
+              border border-white/[0.09]
+              shadow-[0_8px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.08)]">
               <Search className="h-6 w-6 text-zinc-600" />
-              <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+              <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full
+                bg-zinc-800/90 backdrop-blur-sm
+                border border-zinc-700/80
+                flex items-center justify-center">
                 <X className="h-2.5 w-2.5 text-zinc-500" />
               </div>
             </div>
@@ -376,8 +400,10 @@ export default function MenuPage() {
                 handleVegChange("all");
               }}
               className="px-4 py-2 rounded-xl text-sm font-medium
-                bg-white/[0.05] border border-white/[0.08]
-                text-zinc-400 hover:text-white hover:bg-white/[0.08]
+                bg-white/[0.05] backdrop-blur-sm
+                border border-white/[0.09]
+                text-zinc-400 hover:text-white hover:bg-white/[0.09]
+                shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]
                 transition-all duration-200"
             >
               Clear all filters
@@ -387,7 +413,6 @@ export default function MenuPage() {
 
         {/* Grouped sections */}
         {sortedGroups.map(([category, categoryItems]) => {
-          // Compute a per-group start index for stagger offset
           const groupStartIndex = sortedGroups
             .slice(0, sortedGroups.findIndex(([k]) => k === category))
             .reduce((acc, [, arr]) => acc + arr.length, 0);
@@ -395,7 +420,7 @@ export default function MenuPage() {
           return (
             <section key={category} className="mb-14">
 
-              {/* Section heading — only in "all" view */}
+              {/* Section heading */}
               {activeCategory === "all" && (
                 <div className="flex items-center gap-3 mb-5">
                   <span className="text-lg leading-none">{getCategoryEmoji(category)}</span>
@@ -405,7 +430,7 @@ export default function MenuPage() {
                   <span className="text-[11px] text-zinc-600 font-medium tabular-nums">
                     {categoryItems.length} item{categoryItems.length !== 1 ? "s" : ""}
                   </span>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
+                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.08] to-transparent" />
                 </div>
               )}
 
@@ -417,22 +442,32 @@ export default function MenuPage() {
                     index={groupStartIndex + i}
                     animKey={animKey}
                   >
-                    <div
-                      className="group relative flex flex-col h-full rounded-2xl overflow-hidden
-                        bg-zinc-900/50 border border-white/[0.07]
-                        hover:border-amber-500/25 hover:bg-zinc-900
-                        transition-colors duration-200"
-                    >
-                      {/* Image */}
-                      <div className="relative h-40 overflow-hidden bg-zinc-800/60 flex-shrink-0">
-                        <ItemImage src={item.image} name={item.name} />
+                    {/* ── Glass card ── */}
+                    <div className="group relative flex flex-col h-full rounded-2xl overflow-hidden
+                      bg-white/[0.05] backdrop-blur-xl
+                      border border-white/[0.09]
+                      hover:border-amber-500/30 hover:bg-white/[0.08]
+                      shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.08)]
+                      hover:shadow-[0_8px_32px_rgba(0,0,0,0.35),0_0_0_1px_rgba(245,158,11,0.1),inset_0_1px_0_rgba(255,255,255,0.12)]
+                      transition-all duration-300">
 
-                        {/* Dim overlay on hover lifted by image scale */}
+                      {/* Top sheen */}
+                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-10" />
+                      {/* Hover amber glow */}
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-500/[0.04] via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      {/* Image */}
+                      <div className="relative h-40 overflow-hidden flex-shrink-0">
+                        <ItemImage src={item.image} name={item.name} />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
+                        {/* Bottom fade into card */}
+                        <div className="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
 
                         {item.isBestseller && (
                           <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full
-                            bg-amber-500 text-zinc-950 text-[10px] font-bold tracking-wider uppercase">
+                            bg-amber-500/90 backdrop-blur-sm
+                            text-zinc-950 text-[10px] font-bold tracking-wider uppercase
+                            shadow-[0_0_12px_rgba(245,158,11,0.4),inset_0_1px_0_rgba(255,255,255,0.2)]">
                             Bestseller
                           </span>
                         )}
@@ -443,7 +478,7 @@ export default function MenuPage() {
                       </div>
 
                       {/* Info */}
-                      <div className="flex flex-col flex-1 p-3 gap-1">
+                      <div className="relative flex flex-col flex-1 p-3 gap-1">
                         <p className="text-sm font-semibold text-white leading-snug line-clamp-1">
                           {item.name}
                         </p>
@@ -452,8 +487,9 @@ export default function MenuPage() {
                         </p>
 
                         {/* Price + stepper */}
-                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.05]">
-                          <span className="text-sm font-bold text-amber-400 tabular-nums">
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06]">
+                          <span className="text-sm font-bold text-amber-400 tabular-nums
+                            drop-shadow-[0_0_8px_rgba(245,158,11,0.35)]">
                             ₹{item.price}
                           </span>
 
@@ -462,8 +498,10 @@ export default function MenuPage() {
                               onClick={() => handleAddToCart(item)}
                               disabled={addingId === item._id}
                               className="flex h-8 w-8 items-center justify-center rounded-lg
-                                bg-amber-500 hover:bg-amber-400 text-zinc-950
-                                active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+                                bg-amber-500/90 hover:bg-amber-400 text-zinc-950
+                                shadow-[0_0_14px_rgba(245,158,11,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]
+                                hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]
+                                active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
                                 transition-all duration-150"
                               aria-label={`Add ${item.name}`}
                             >
@@ -478,10 +516,12 @@ export default function MenuPage() {
                               <button
                                 onClick={() => handleDecrement(item)}
                                 className="flex h-7 w-7 items-center justify-center rounded-lg
-                                  bg-white/[0.07] hover:bg-white/[0.12]
-                                  border border-white/[0.09]
-                                  text-white active:scale-90
-                                  transition-all duration-100"
+                                  bg-white/[0.07] backdrop-blur-sm
+                                  hover:bg-white/[0.14]
+                                  border border-white/[0.10]
+                                  text-white
+                                  shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]
+                                  active:scale-90 transition-all duration-100"
                                 aria-label="Remove one"
                               >
                                 <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -494,7 +534,9 @@ export default function MenuPage() {
                               <button
                                 onClick={() => handleIncrement(item)}
                                 className="flex h-7 w-7 items-center justify-center rounded-lg
-                                  bg-amber-500 hover:bg-amber-400 text-zinc-950
+                                  bg-amber-500/90 hover:bg-amber-400 text-zinc-950
+                                  shadow-[0_0_10px_rgba(245,158,11,0.3),inset_0_1px_0_rgba(255,255,255,0.15)]
+                                  hover:shadow-[0_0_16px_rgba(245,158,11,0.45)]
                                   active:scale-90 transition-all duration-100"
                                 aria-label="Add one more"
                               >
