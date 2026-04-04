@@ -17,13 +17,12 @@ import { AppSidebar } from "@/components/app-sidebar";
 // ── Tab types ─────────────────────────────────────────────────────────────────
 
 export type AdminTab =
-  | "overview" | "orders" | "menu" | "analytics"
+  | "orders" | "menu" | "analytics"
   | "customers" | "categories" | "order-tracking" | "reports"
   | "revenue" | "data-library" | "settings" | "notifications"
   | "help" | "search";
 
 const TAB_META: Record<AdminTab, { label: string; icon: React.ReactNode; sub: string }> = {
-  overview: { label: "Overview", icon: <LayoutDashboard className="h-4 w-4" />, sub: "Your café at a glance" },
   orders: { label: "Orders", icon: <ShoppingBag className="h-4 w-4" />, sub: "Monitor and manage orders" },
   menu: { label: "Menu", icon: <UtensilsCrossed className="h-4 w-4" />, sub: "Add, edit & toggle items" },
   analytics: { label: "Analytics", icon: <BarChart3 className="h-4 w-4" />, sub: "Revenue and order trends" },
@@ -43,8 +42,8 @@ const TAB_META: Record<AdminTab, { label: string; icon: React.ReactNode; sub: st
 
 export default function AdminDashboardPage() {
   const searchParams = useSearchParams();
-  const tab = (searchParams.get("tab") as AdminTab) ?? "overview";
-  const meta = TAB_META[tab] ?? TAB_META.overview;
+  const tab = (searchParams.get("tab") as AdminTab) ?? "orders";
+  const meta = TAB_META[tab] ?? TAB_META.orders;
 
   return (
     <SidebarProvider
@@ -103,7 +102,7 @@ export default function AdminDashboardPage() {
         <main className="flex flex-col gap-6 p-4 md:p-6">
 
           {/* ── Core tabs ── */}
-          {tab === "overview" && (
+          {/* {tab === "overview" && (
             <>
               <StatsCards />
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -112,7 +111,7 @@ export default function AdminDashboardPage() {
               </div>
               <OrdersTable compact />
             </>
-          )}
+          )} */}
 
           {tab === "orders" && <OrdersTable />}
 

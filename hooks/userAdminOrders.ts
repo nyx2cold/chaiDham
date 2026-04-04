@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Order, OrderStatus } from "./userOrders";
 
 export function useAdminOrders(pollInterval = 5000) {
-  const [orders,       setOrders]       = useState<Order[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [updating,     setUpdating]     = useState<string | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchOrders = useCallback(async (filter = "all") => {
@@ -32,10 +32,10 @@ export function useAdminOrders(pollInterval = 5000) {
   const updateStatus = useCallback(async (orderId: string, status: OrderStatus) => {
     setUpdating(orderId);
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
-        method:  "PATCH",
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ status }),
+        body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error("Failed");
 

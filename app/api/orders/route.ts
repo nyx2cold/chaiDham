@@ -1,11 +1,11 @@
-// app/api/orders/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbconnect";
 import OrderModel from "@/model/order";
+import UserModel from "@/model/user";
+import order from "@/model/order";
 
-// ── GET — admin fetches all orders ────────────────────────────────────────────
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);
@@ -33,7 +33,8 @@ export async function GET(req: Request) {
     }
 }
 
-// ── POST — user places a new order ────────────────────────────────────────────
+
+
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);
@@ -46,7 +47,6 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { items, total, type } = body;
 
-        // Basic validation
         if (!items || !Array.isArray(items) || items.length === 0) {
             return NextResponse.json({ error: "Order must have at least one item" }, { status: 400 });
         }
@@ -57,32 +57,30 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Type must be dine-in or takeaway" }, { status: 400 });
         }
 
+
         const user = session.user as any;
+
 
         const order = await OrderModel.create({
             items,
             total,
             type,
-            customerName: user.username ?? user.name ?? "Guest",
-            customerEmail: user.email,
-            customerId: user._id ?? user.id,
+            customer: {
+                name: user.username ?? user.name ?? "Guest",
+                email: user.email,
+                userId: user._id ?? user.id,
+            },
             status: "pending",
         });
 
-        // 🔔 Emit real-time notification to all connected admins
-        const io = (global as any).io;
-        if (io) {
-            io.to("admins").emit("new:order", {
-                id: order._id.toString(),
-                customer: order.customerName,
-                items: order.items,
-                total: order.total,
-                type: order.type,
-                placedAt: new Date().toLocaleTimeString("en-IN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                }),
-            });
+        // Award 13 points per ₹200 spent
+        const pointsEarned = Math.floor(order.total / 200) * 13;
+
+        if (pointsEarned > 0) {
+            await UserModel.findByIdAndUpdate(
+                user._id ?? user.id,
+                { $inc: { browniePoints: pointsEarned } }
+            );
         }
 
         return NextResponse.json({

@@ -12,6 +12,7 @@ export interface User extends Document {
   isAcceptingOrders: boolean
   resetCode: string | null
   resetCodeExpire: Date | null
+  browniePoints: number
 }
 
 const UserSchema: Schema<User> = new Schema(
@@ -69,6 +70,10 @@ const UserSchema: Schema<User> = new Schema(
     resetCodeExpire: {
       type: Date,
       default: null,
+    },
+    browniePoints: {
+      type: Number,
+      default: 0,
     },
   },
   {
