@@ -19,15 +19,11 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import React from "react";
 
 // ── Nav config ────────────────────────────────────────────────────────────────
 
-const MAIN_NAV = [
-    { label: "Overview", href: "/dashboard", icon: LayoutDashboard, exact: true },
-    { label: "Orders", href: "/dashboard?tab=orders", icon: ShoppingBag, badge: "5", tabKey: "orders" },
-    { label: "Menu", href: "/dashboard?tab=menu", icon: UtensilsCrossed, tabKey: "menu" },
-    { label: "Analytics", href: "/dashboard?tab=analytics", icon: BarChart3, tabKey: "analytics" },
-];
+
 
 const MANAGE_NAV = [
     { label: "Customers", href: "/dashboard?tab=customers", icon: Users, tabKey: "customers" },
@@ -129,6 +125,24 @@ function NavItem({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const [pendingCount, setPendingCount] = React.useState<number>(0);
+
+    React.useEffect(() => {
+        async function fetchPending() {
+            const res = await fetch("/api/orders?status=pending");
+            const data = await res.json();
+            setPendingCount(data.count); // adjust based on your API response shape
+        }
+        fetchPending();
+    }, []);
+
+
+    const MAIN_NAV = [
+        { label: "Overview", href: "/dashboard", icon: LayoutDashboard, exact: true },
+        { label: "Orders", href: "/dashboard?tab=orders", icon: ShoppingBag, badge: pendingCount > 0 ? String(pendingCount) : undefined, tabKey: "orders" },
+        { label: "Menu", href: "/dashboard?tab=menu", icon: UtensilsCrossed, tabKey: "menu" },
+        { label: "Analytics", href: "/dashboard?tab=analytics", icon: BarChart3, tabKey: "analytics" },
+    ];
     const { data: session } = useSession();
 
     const displayName = (session?.user as any)?.username ?? session?.user?.name ?? "Admin";

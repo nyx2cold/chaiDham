@@ -6,6 +6,7 @@ import { Search, Plus, Minus, Loader2, UtensilsCrossed, X } from "lucide-react";
 import { useCart } from "@/context/cartContext";
 import { toast } from "sonner";
 import { CafeClosedBanner } from "@/components/menu/CafeClosedBanner";
+const AMBER = "#f59e0b";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface MenuItem {
@@ -238,11 +239,17 @@ export default function MenuPage() {
   return (
     <div className="min-h-screen bg-zinc-950">
 
+
       {/* ── Sticky filter bar ── */}
       <div className="sticky top-16 z-30 border-b border-white/[0.05]
         bg-zinc-950/70 backdrop-blur-2xl
         shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_-1px_0_rgba(255,255,255,0.04)]">
+
         <div className="mx-auto max-w-6xl px-4 py-3 space-y-3">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "1.75rem" }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: AMBER, boxShadow: "0 0 8px rgba(245,158,11,0.6)" }} />
+            <span style={{ fontSize: 11, color: "#6b5e3e", letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 600 }}>ChaiDham / Menu</span>
+          </div>
 
           {/* Row 1: search + veg filter */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">

@@ -86,7 +86,6 @@ export default function AdminDashboardPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
               <span className="text-[11px] font-medium text-green-400">Live</span>
             </div> */}
-            {/* <LiveStatusToggle /> */}
 
             {/* <button className="relative flex h-8 w-8 items-center justify-center rounded-lg
               border border-white/[0.08] bg-white/[0.03]
@@ -94,7 +93,6 @@ export default function AdminDashboardPage() {
               <Bell className="h-4 w-4" />
               <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
             </button> */}
-            {/* <OrderNotifications /> */}
           </div>
         </header>
 

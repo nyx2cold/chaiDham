@@ -176,7 +176,7 @@ export function OrdersTable({ compact }: Props) {
 
                 <div className="relative">
                     {/* Header */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3
+                    <div className="sticky top-0 z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3
                         px-5 py-4 border-b border-white/[0.06] bg-gradient-to-r from-white/[0.04] to-transparent">
                         <div>
                             <div className="flex items-center gap-2">
