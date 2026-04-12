@@ -173,3 +173,85 @@
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes zoom-in-97 {
+  from {
+    transform: scale(0.97);
+  }
+}
+
+@keyframes zoom-out-97 {
+  to {
+    transform: scale(0.97);
+  }
+}
+
+@keyframes slide-in-from-top-1 {
+  from {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes slide-out-to-top-1 {
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation-fill-mode: both;
+    animation-duration: 150ms;
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .animate-out {
+    animation-fill-mode: both;
+    animation-duration: 150ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  .fade-in-0 {
+    animation-name: fade-in;
+  }
+
+  .fade-out-0 {
+    animation-name: fade-out;
+  }
+
+  .zoom-in-\[0\.97\] {
+    animation-name: zoom-in-97;
+  }
+
+  .zoom-out-\[0\.97\] {
+    animation-name: zoom-out-97;
+  }
+
+  .slide-in-from-top-1 {
+    animation-name: slide-in-from-top-1;
+  }
+
+  .slide-out-to-top-1 {
+    animation-name: slide-out-to-top-1;
+  }
+
+  .duration-150 {
+    animation-duration: 150ms;
+  }
+
+  .ease-out {
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}

@@ -28,9 +28,9 @@ import React from "react";
 const MANAGE_NAV = [
     { label: "Customers", href: "/dashboard?tab=customers", icon: Users, tabKey: "customers" },
     // { label: "Categories", href: "/dashboard?tab=categories", icon: Tag, tabKey: "categories" },
-    { label: "Order Tracking", href: "/dashboard?tab=order-tracking", icon: Truck, tabKey: "order-tracking" },
+    // { label: "Order Tracking", href: "/dashboard?tab=order-tracking", icon: Truck, tabKey: "order-tracking" },
     // { label: "Reports", href: "/dashboard?tab=reports", icon: ClipboardList, tabKey: "reports" },
-    { label: "Revenue", href: "/dashboard?tab=revenue", icon: TrendingUp, tabKey: "revenue" },
+    // { label: "Revenue", href: "/dashboard?tab=revenue", icon: TrendingUp, tabKey: "revenue" },
 ];
 
 // const DOCS_NAV = [
@@ -195,7 +195,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenu>
                 </SidebarGroup>
 
-                <SidebarSeparator className="bg-white/[0.06] my-2" />
 
                 {/* Documents */}
                 {/* <SidebarGroup className="p-0">
@@ -215,6 +214,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         {BOTTOM_NAV.map((item) => <NavItem key={item.label} {...item} />)}
                     </SidebarMenu>
                 </SidebarGroup>
+                <SidebarSeparator className="bg-white/[0.06] my-2" />
+
 
             </SidebarContent>
 

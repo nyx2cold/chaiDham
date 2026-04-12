@@ -359,68 +359,122 @@ export default function Navbar() {
             ) : session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 whitespace-nowrap group">
-                    <Avatar className="h-8 w-8 border border-white/10 shadow-sm group-hover:border-amber-500/40 transition-all duration-200">
-                      <AvatarFallback className={isAdmin ? "bg-red-500/90 text-white text-xs font-bold" : "bg-amber-500 text-zinc-950 text-xs font-bold"}>
+                  <button className="inline-flex items-center gap-2 rounded-full outline-none 
+      focus-visible:ring-2 focus-visible:ring-amber-500/60 focus-visible:ring-offset-2 
+      focus-visible:ring-offset-zinc-950 whitespace-nowrap group">
+                    <Avatar className="h-8 w-8 border border-white/10 shadow-sm 
+        group-hover:border-amber-500/40 transition-colors duration-200">
+                      <AvatarFallback className={isAdmin
+                        ? "bg-red-500/90 text-white text-xs font-bold"
+                        : "bg-amber-500 text-zinc-950 text-xs font-bold"}>
                         {initials}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden xs:inline-block sm:inline-block max-w-[120px] truncate text-sm font-medium text-white leading-none">
+                    <span className="hidden xs:inline-block sm:inline-block max-w-[120px] truncate 
+        text-sm font-medium text-white leading-none">
                       {displayName}
                     </span>
-                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                    {/* Chevron rotates smoothly via CSS, not JS re-render */}
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500 transition-transform duration-200 
+        group-data-[state=open]:rotate-180" />
                   </button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" sideOffset={8}
-                  className="relative w-56 rounded-2xl p-1.5 overflow-hidden bg-zinc-950 backdrop-blur-xl border border-white/[0.09] shadow-[0_4px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300">
-                  <div className="relative px-3 py-2.5 mb-1">
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={6}
+                  collisionPadding={12}
+                  className="w-56 rounded-2xl p-1.5
+      bg-zinc-950 border border-white/[0.09]
+      shadow-[0_8px_32px_rgba(0,0,0,0.6),0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)]
+      origin-top-right
+      data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.97]
+      data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-[0.97]
+      data-[state=open]:slide-in-from-top-1
+      data-[state=closed]:slide-out-to-top-1
+      duration-150 ease-out"
+                  style={{ willChange: "transform, opacity" }}
+                >
+                  {/* User info header */}
+                  <div className="px-3 py-2.5 mb-1 select-none">
                     {isAdmin && (
-                      <span className="inline-flex items-center mb-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
+                      <span className="inline-flex items-center mb-1.5 px-1.5 py-0.5 rounded-md 
+          text-[10px] font-bold tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
                         ADMIN
                       </span>
                     )}
-                    <p className="text-zinc-500 text-[11px] uppercase tracking-wider font-medium">Signed in as</p>
-                    <p className="text-white font-semibold text-sm truncate mt-0.5">{displayEmail ?? "Unknown"}</p>
+                    <p className="text-zinc-500 text-[11px] uppercase tracking-wider font-medium">
+                      Signed in as
+                    </p>
+                    <p className="text-white font-semibold text-sm truncate mt-0.5">
+                      {displayEmail ?? "Unknown"}
+                    </p>
                   </div>
 
-                  <DropdownMenuSeparator className="bg-white/10 -mx-1.5 my-1" />
+                  <DropdownMenuSeparator className="bg-white/[0.07] -mx-1.5 my-1" />
 
                   {pathname !== "/" && (
-                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-all duration-150 data-[highlighted]:bg-white/5 data-[highlighted]:text-white">
+                    <DropdownMenuItem asChild
+                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
+          transition-colors duration-100
+          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
+          focus:bg-transparent">
                       <Link href="/" className="flex items-center gap-2.5">
-                        <Home className="h-4 w-4 text-amber-400 shrink-0" /><span>Home</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  {pathname !== "/profile" && (
-                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-all duration-150 data-[highlighted]:bg-white/5 data-[highlighted]:text-white">
-                      <Link href="/profile" className="flex items-center gap-2.5">
-                        <User className="h-4 w-4 text-amber-400 shrink-0" /><span>Profile</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  {pathname !== "/menu" && (
-                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-all duration-150 data-[highlighted]:bg-white/5 data-[highlighted]:text-white">
-                      <Link href="/menu" className="flex items-center gap-2.5">
-                        <UtensilsCrossed className="h-4 w-4 text-amber-400 shrink-0" /><span>Menu</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  {isAdmin && pathname !== "/dashboard" && (
-                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-all duration-150 data-[highlighted]:bg-white/5 data-[highlighted]:text-white">
-                      <Link href="/dashboard" className="flex items-center gap-2.5">
-                        <LayoutDashboard className="h-4 w-4 text-amber-400 shrink-0" /><span>Dashboard</span>
+                        <Home className="h-4 w-4 text-amber-400 shrink-0" />
+                        <span>Home</span>
                       </Link>
                     </DropdownMenuItem>
                   )}
 
-                  <DropdownMenuSeparator className="bg-white/10 -mx-1.5 my-1" />
+                  {pathname !== "/profile" && (
+                    <DropdownMenuItem asChild
+                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
+          transition-colors duration-100
+          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
+          focus:bg-transparent">
+                      <Link href="/profile" className="flex items-center gap-2.5">
+                        <User className="h-4 w-4 text-amber-400 shrink-0" />
+                        <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {pathname !== "/menu" && (
+                    <DropdownMenuItem asChild
+                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
+          transition-colors duration-100
+          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
+          focus:bg-transparent">
+                      <Link href="/menu" className="flex items-center gap-2.5">
+                        <UtensilsCrossed className="h-4 w-4 text-amber-400 shrink-0" />
+                        <span>Menu</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {isAdmin && pathname !== "/dashboard" && (
+                    <DropdownMenuItem asChild
+                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
+          transition-colors duration-100
+          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
+          focus:bg-transparent">
+                      <Link href="/dashboard" className="flex items-center gap-2.5">
+                        <LayoutDashboard className="h-4 w-4 text-amber-400 shrink-0" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuSeparator className="bg-white/[0.07] -mx-1.5 my-1" />
 
                   <DropdownMenuItem
                     onClick={() => signOut({ callbackUrl: "/sign-in" })}
-                    className="rounded-xl px-3 py-2 cursor-pointer outline-none text-red-400 transition-all duration-150 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-red-300 [&_svg]:text-red-400">
-                    <LogOut className="mr-2.5 h-4 w-4 shrink-0" />Sign out
+                    className="rounded-xl px-3 py-2 cursor-pointer outline-none text-red-400
+        transition-colors duration-100
+        data-[highlighted]:bg-red-500/[0.08] data-[highlighted]:text-red-300
+        focus:bg-transparent">
+                    <LogOut className="mr-2.5 h-4 w-4 shrink-0" />
+                    Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { CheckCircle2, Clock, ChefHat, XCircle, Package } from "lucide-react";
+import {
+    CheckCircle2, Clock, ChefHat, XCircle, Star,
+    User, ShoppingBag, LogOut, Trophy, Flame,
+} from "lucide-react";
 import type React from "react";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
+// ── Types (unchanged) ─────────────────────────────────────────────────────────
 type OrderStatus = "pending" | "preparing" | "ready" | "completed" | "cancelled";
-
 interface OrderItem { name: string; quantity: number; price: number }
 interface Order {
     _id: string; orderNumber: number; items: OrderItem[];
@@ -16,21 +17,18 @@ interface Order {
 }
 interface Stats {
     totalOrders: number; totalSpent: number;
-    favoriteItem: string; browniePoints: number; memberSince?: string;
+    favoriteItem: string | null; browniePoints: number; memberSince?: string;
 }
 interface DBUser {
     userName: string; email: string; phone: string; createdAt: string; browniePoints: number;
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
+// ── Constants (unchanged) ─────────────────────────────────────────────────────
 const TIERS = [
     { name: "Chai Lover", min: 0, max: 200, emoji: "🍵", perks: "Welcome to ChaiDham!" },
     { name: "Chai Addict", min: 200, max: 500, emoji: "☕", perks: "Priority order processing" },
     { name: "Chai Master", min: 500, max: Infinity, emoji: "👑", perks: "Exclusive member discounts" },
 ];
-
-const AMBER = "#f59e0b";
 
 const STATUS_STEPS = [
     { key: "pending", label: "Order Received", icon: "🧾", desc: "We got your order" },
@@ -38,18 +36,15 @@ const STATUS_STEPS = [
     { key: "ready", label: "Ready for Pickup", icon: "✅", desc: "Come grab it!" },
 ];
 
-const STATUS_STYLE: Record<OrderStatus, { bg: string; text: string; border: string; label: string; icon: React.ReactNode }> = {
-    pending: { bg: "rgba(245,158,11,0.12)", text: "#fbbf24", border: "rgba(245,158,11,0.3)", label: "Pending", icon: <Clock size={11} /> },
-    preparing: { bg: "rgba(59,130,246,0.12)", text: "#60a5fa", border: "rgba(59,130,246,0.3)", label: "Preparing", icon: <ChefHat size={11} /> },
-    ready: { bg: "rgba(16,185,129,0.12)", text: "#34d399", border: "rgba(16,185,129,0.3)", label: "Ready!", icon: <CheckCircle2 size={11} /> },
-    completed: { bg: "rgba(16,185,129,0.10)", text: "#34d399", border: "rgba(16,185,129,0.25)", label: "Completed", icon: <CheckCircle2 size={11} /> },
-    cancelled: { bg: "rgba(239,68,68,0.12)", text: "#f87171", border: "rgba(239,68,68,0.3)", label: "Cancelled", icon: <XCircle size={11} /> },
+const STATUS_META: Record<OrderStatus, { bg: string; text: string; border: string; label: string; icon: React.ReactNode }> = {
+    pending: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/25", label: "Pending", icon: <Clock size={11} /> },
+    preparing: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/25", label: "Preparing", icon: <ChefHat size={11} /> },
+    ready: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/25", label: "Ready!", icon: <CheckCircle2 size={11} /> },
+    completed: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", label: "Completed", icon: <CheckCircle2 size={11} /> },
+    cancelled: { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/25", label: "Cancelled", icon: <XCircle size={11} /> },
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const BASE = "var(--font-sans),'DM Sans','Segoe UI',sans-serif";
-
+// ── Helpers (unchanged) ───────────────────────────────────────────────────────
 function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -71,116 +66,97 @@ function getTierProgress(pts: number) {
     return Math.min(100, Math.round(((pts - tier.min) / (next.min - tier.min)) * 100));
 }
 
-const glass: React.CSSProperties = {
-    position: "relative",
-    background: "linear-gradient(135deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.03) 100%)",
-    backdropFilter: "blur(24px)",
-    WebkitBackdropFilter: "blur(24px)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    boxShadow: "0 8px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.10)",
-    borderRadius: 20,
-};
-
-// ── Live Order Tracker ────────────────────────────────────────────────────────
-
+// ── Live Order Tracker (redesigned, logic unchanged) ─────────────────────────
 function LiveOrderTracker({ order }: { order: Order }) {
     const stepIndex = STATUS_STEPS.findIndex((s) => s.key === order.status);
     const isDone = order.status === "completed" || order.status === "cancelled";
+    const s = STATUS_META[order.status];
 
     return (
-        <div style={{
-            ...glass,
-            borderRadius: 14,
-            padding: "1rem",
-            borderColor: isDone ? "rgba(255,255,255,0.07)" : "rgba(245,158,11,0.25)",
-            background: isDone
-                ? "rgba(255,255,255,0.03)"
-                : "linear-gradient(135deg,rgba(245,158,11,0.07) 0%,rgba(255,255,255,0.03) 100%)",
-        }}>
-            {/* Order header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 800, color: AMBER }}>
-                        #{order.orderNumber}
+        <div className={`relative rounded-2xl overflow-hidden border transition-all duration-300
+      ${isDone
+                ? "bg-white/[0.03] border-white/[0.07]"
+                : "bg-gradient-to-br from-amber-500/[0.07] via-white/[0.03] to-transparent border-amber-500/20"
+            }
+      shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]`}>
+
+            {!isDone && (
+                <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-16 rounded-full bg-amber-500/10 blur-2xl" />
+            )}
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                    <span className="font-mono text-[13px] font-black text-amber-400">#{order.orderNumber}</span>
+                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.bg} ${s.text} ${s.border}`}>
+                        {s.icon}{s.label}
                     </span>
-                    <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
-                        background: STATUS_STYLE[order.status].bg,
-                        color: STATUS_STYLE[order.status].text,
-                        border: `1px solid ${STATUS_STYLE[order.status].border}`,
-                    }}>
-                        {STATUS_STYLE[order.status].icon}
-                        {STATUS_STYLE[order.status].label}
-                    </span>
-                    <span style={{
-                        fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6,
-                        background: order.type === "dine-in" ? "rgba(14,165,233,0.12)" : "rgba(139,92,246,0.12)",
-                        color: order.type === "dine-in" ? "#38bdf8" : "#a78bfa",
-                        border: order.type === "dine-in" ? "1px solid rgba(14,165,233,0.25)" : "1px solid rgba(139,92,246,0.25)",
-                    }}>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border
+            ${order.type === "dine-in"
+                            ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                            : "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                        }`}>
                         {order.type === "dine-in" ? "Dine In" : "Takeaway"}
                     </span>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>₹{order.total}</span>
+                <span className="text-sm font-black text-white">₹{order.total}</span>
             </div>
 
             {/* Items */}
-            <p style={{ fontSize: 11, color: "#6b5e3e", marginBottom: "0.75rem", fontFamily: BASE }}>
-                {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+            <p className="px-4 pt-2.5 text-[11px] text-zinc-500 leading-relaxed">
+                {order.items.map((i) => `${i.name} ×${i.quantity}`).join(" · ")}
             </p>
 
-            {/* Stepper — only for non-done orders */}
-            {!isDone && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {/* Stepper */}
+            {!isDone ? (
+                <div className="px-4 pt-3 pb-4 space-y-0">
                     {STATUS_STEPS.map((step, i) => {
                         const isDoneStep = i < stepIndex;
                         const isActiveStep = i === stepIndex;
                         return (
                             <div key={step.key}>
-                                <div style={{
-                                    display: "flex", alignItems: "center", gap: 10,
-                                    padding: "8px 10px", borderRadius: 10,
-                                    background: isActiveStep
-                                        ? "rgba(245,158,11,0.10)"
-                                        : isDoneStep ? "rgba(16,185,129,0.06)" : "transparent",
-                                    border: isActiveStep
-                                        ? "1px solid rgba(245,158,11,0.20)"
-                                        : isDoneStep ? "1px solid rgba(16,185,129,0.15)" : "1px solid transparent",
-                                    opacity: isDoneStep || isActiveStep ? 1 : 0.3,
-                                    transition: "all 0.3s",
-                                }}>
-                                    <span style={{ fontSize: 15, lineHeight: 1 }}>{step.icon}</span>
-                                    <div style={{ flex: 1 }}>
-                                        <p style={{
-                                            margin: 0, fontSize: 11, fontWeight: 700, fontFamily: BASE,
-                                            color: isActiveStep ? "#fcd34d" : isDoneStep ? "#34d399" : "#4a3f28",
-                                        }}>{step.label}</p>
-                                        <p style={{ margin: 0, fontSize: 10, color: "#4a3f28", fontFamily: BASE }}>{step.desc}</p>
+                                <div className={`flex items-center gap-3 px-3 py-2 rounded-xl border transition-all duration-300
+                  ${isActiveStep
+                                        ? "bg-amber-500/10 border-amber-500/20"
+                                        : isDoneStep
+                                            ? "bg-emerald-500/[0.06] border-emerald-500/15"
+                                            : "border-transparent opacity-25"
+                                    }`}>
+                                    <span className="text-base leading-none">{step.icon}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-[11px] font-bold
+                      ${isActiveStep ? "text-amber-300" : isDoneStep ? "text-emerald-400" : "text-zinc-600"}`}>
+                                            {step.label}
+                                        </p>
+                                        <p className="text-[10px] text-zinc-600">{step.desc}</p>
                                     </div>
-                                    {isDoneStep && (
-                                        <CheckCircle2 size={13} color="#34d399" />
-                                    )}
-                                    {isActiveStep && (
-                                        <span style={{
-                                            display: "inline-block", width: 8, height: 8, borderRadius: "50%",
-                                            background: AMBER, animation: "pulse 1.5s infinite",
-                                        }} />
-                                    )}
+                                    {isDoneStep && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                                    {isActiveStep && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />}
                                 </div>
                                 {i < STATUS_STEPS.length - 1 && (
-                                    <div style={{
-                                        marginLeft: 22, width: 1, height: 10,
-                                        background: isDoneStep ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.05)",
-                                    }} />
+                                    <div className={`ml-[22px] w-px h-2.5 ${isDoneStep ? "bg-emerald-500/20" : "bg-white/[0.05]"}`} />
                                 )}
                             </div>
                         );
                     })}
                 </div>
+            ) : (
+                <div className={`mx-4 my-3 flex items-center gap-3 px-3 py-2.5 rounded-xl border
+          ${order.status === "completed"
+                        ? "bg-emerald-500/[0.07] border-emerald-500/15"
+                        : "bg-red-500/[0.07] border-red-500/15"
+                    }`}>
+                    <span className="text-lg">{order.status === "completed" ? "✅" : "❌"}</span>
+                    <div>
+                        <p className={`text-xs font-bold ${order.status === "completed" ? "text-emerald-400" : "text-red-400"}`}>
+                            {order.status === "completed" ? "Order completed" : "Order cancelled"}
+                        </p>
+                        <p className="text-[10px] text-zinc-600">{order.type} · {formatTime(order.createdAt)}</p>
+                    </div>
+                </div>
             )}
 
-            <p style={{ margin: "0.6rem 0 0", fontSize: 10, color: "#4a3f28", fontFamily: BASE }}>
+            <p className="px-4 pb-3 text-[10px] text-zinc-600">
                 {formatDate(order.createdAt)} · {formatTime(order.createdAt)}
             </p>
         </div>
@@ -188,7 +164,6 @@ function LiveOrderTracker({ order }: { order: Order }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-
 export default function ProfilePage() {
     const { data: session } = useSession();
     const sessionUser = session?.user as any;
@@ -196,13 +171,13 @@ export default function ProfilePage() {
     const [activeTab, setActiveTab] = useState<"orders" | "account">("orders");
     const [ordersTab, setOrdersTab] = useState<"live" | "history">("live");
     const [orders, setOrders] = useState<Order[]>([]);
-    const [stats, setStats] = useState<Stats>({ totalOrders: 0, totalSpent: 0, favoriteItem: "—", browniePoints: 0 });
+    const [stats, setStats] = useState<Stats>({ totalOrders: 0, totalSpent: 0, favoriteItem: null, browniePoints: 0 });
     const [dbUser, setDbUser] = useState<DBUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-    // Form state
+    // Form state (unchanged)
     const [userName, setUserName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -210,7 +185,7 @@ export default function ProfilePage() {
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
 
-    // ── Initial load ──────────────────────────────────────────────────────────
+    // ── Initial load (unchanged) ──────────────────────────────────────────────
     useEffect(() => {
         async function load() {
             try {
@@ -220,7 +195,6 @@ export default function ProfilePage() {
                 ]);
                 const profileData = await profileRes.json();
                 const ordersData = await ordersRes.json();
-
                 if (profileData.success) {
                     setDbUser(profileData.user);
                     setUserName(profileData.user.userName ?? "");
@@ -231,32 +205,24 @@ export default function ProfilePage() {
                     setOrders(ordersData.orders);
                     setStats(ordersData.stats);
                 }
-            } catch { } finally {
-                setLoading(false);
-            }
+            } catch { } finally { setLoading(false); }
         }
         if (session) load();
     }, [session]);
 
-
-    // ── Poll every 5s always ──────────────────────────────────────────────────
+    // ── Poll every 5s (unchanged) ─────────────────────────────────────────────
     useEffect(() => {
         const id = setInterval(async () => {
             try {
                 const res = await fetch("/api/orders/my");
                 const data = await res.json();
-                if (data.success) {
-                    setOrders(data.orders);
-                    setStats(data.stats);
-                }
+                if (data.success) { setOrders(data.orders); setStats(data.stats); }
             } catch { }
         }, 5000);
         return () => clearInterval(id);
     }, []);
 
-
-
-    // ── Save profile ──────────────────────────────────────────────────────────
+    // ── Save profile (unchanged) ──────────────────────────────────────────────
     async function handleSave() {
         setSaving(true); setSaveMsg(null);
         try {
@@ -275,7 +241,7 @@ export default function ProfilePage() {
         } finally { setSaving(false); }
     }
 
-    // ── Derived ───────────────────────────────────────────────────────────────
+    // ── Derived (unchanged) ───────────────────────────────────────────────────
     const tier = getTier(stats.browniePoints);
     const progress = getTierProgress(stats.browniePoints);
     const nextTier = TIERS.find((t) => t.min > tier.min);
@@ -287,267 +253,319 @@ export default function ProfilePage() {
     const liveOrders = orders.filter((o) => o.status !== "completed" && o.status !== "cancelled");
     const historyOrders = orders.filter((o) => o.status === "completed" || o.status === "cancelled");
 
-    // ── Styles ────────────────────────────────────────────────────────────────
-    const inputStyle: React.CSSProperties = {
-        width: "100%", background: "rgba(255,255,255,0.05)",
-        border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10,
-        padding: "0.6rem 0.9rem", color: "#fff", fontSize: 14,
-        fontFamily: BASE, outline: "none", boxSizing: "border-box", transition: "border 0.2s",
-    };
-    const labelStyle: React.CSSProperties = {
-        fontSize: 10, fontWeight: 700, color: "#6b5e3e",
-        textTransform: "uppercase", letterSpacing: "0.12em",
-        display: "block", marginBottom: 6, fontFamily: BASE,
-    };
-
+    // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div style={{ minHeight: "100vh", background: "#0a0a0a", fontFamily: BASE, color: "#f5f0e8", padding: "2rem 1rem 4rem", overflowX: "hidden" }}>
+        <div className="min-h-screen bg-zinc-950 text-white">
 
-            {/* pulse animation */}
-            <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
+            {/* Ambient background glows */}
+            <div className="pointer-events-none fixed inset-0 overflow-hidden">
+                <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-amber-500/[0.04] blur-[100px]" />
+                <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] rounded-full bg-amber-600/[0.03] blur-[80px]" />
+            </div>
 
-            {/* Ambient glows */}
-            <div style={{ position: "fixed", top: "-15%", left: "-10%", width: "40vw", height: "40vw", borderRadius: "50%", background: "radial-gradient(circle,rgba(245,158,11,0.07) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-            <div style={{ position: "fixed", bottom: "-10%", right: "-8%", width: "35vw", height: "35vw", borderRadius: "50%", background: "radial-gradient(circle,rgba(245,158,11,0.05) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-
-            <div style={{ maxWidth: 820, margin: "0 auto", position: "relative", zIndex: 1 }}>
+            <div className="relative mx-auto max-w-3xl px-4 py-8 pb-16">
 
                 {/* Breadcrumb */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "1.75rem" }}>
-                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: AMBER, boxShadow: "0 0 8px rgba(245,158,11,0.6)" }} />
-                    <span style={{ fontSize: 11, color: "#6b5e3e", letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 600 }}>ChaiDham / Profile</span>
+                <div className="flex items-center gap-2 mb-6">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]" />
+                    <span className="text-[11px] text-zinc-600 uppercase tracking-[0.18em] font-semibold">
+                        ChaiDham / Profile
+                    </span>
                 </div>
 
-                {/* ── Hero ── */}
-                <div style={{ ...glass, padding: "1.75rem 2rem", marginBottom: "1.1rem", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(245,158,11,0.07)", filter: "blur(40px)", pointerEvents: "none" }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap", position: "relative" }}>
+                {/* ── Hero card ── */}
+                <div className="relative rounded-2xl overflow-hidden mb-3
+          bg-white/[0.04] backdrop-blur-xl
+          border border-white/[0.08]
+          shadow-[0_8px_40px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]">
+
+                    {/* Top sheen */}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+                    <div className="pointer-events-none absolute -top-10 left-10 w-48 h-24 bg-amber-500/[0.06] blur-3xl rounded-full" />
+
+                    <div className="relative flex items-center gap-5 p-5 flex-wrap">
                         {/* Avatar */}
-                        <div style={{ position: "relative", flexShrink: 0 }}>
-                            <div style={{
-                                width: 72, height: 72, borderRadius: "50%",
-                                background: "linear-gradient(135deg,#eab308,#f59e0b)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 24, fontWeight: 800, color: "#0a0a0a",
-                                boxShadow: "0 0 0 3px rgba(245,158,11,0.2),0 0 20px rgba(245,158,11,0.25)",
-                            }}>{getInitials(displayName)}</div>
-                            <div style={{ position: "absolute", bottom: 3, right: 3, width: 13, height: 13, borderRadius: "50%", background: "#22c55e", border: "2px solid #0a0a0a" }} />
+                        <div className="relative shrink-0">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600
+                flex items-center justify-center text-2xl font-black text-zinc-950
+                shadow-[0_0_0_3px_rgba(245,158,11,0.2),0_0_24px_rgba(245,158,11,0.2)]">
+                                {getInitials(displayName)}
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-zinc-950" />
                         </div>
+
                         {/* Info */}
-                        <div style={{ flex: 1, minWidth: 140 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "#fff" }}>{displayName}</h1>
-                                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "rgba(245,158,11,0.12)", color: AMBER, border: "1px solid rgba(245,158,11,0.25)" }}>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <h1 className="text-xl font-black text-white truncate">{displayName}</h1>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold
+                  bg-amber-500/12 text-amber-400 border border-amber-500/25">
                                     {tier.emoji} {tier.name}
                                 </span>
                                 {liveOrders.length > 0 && (
-                                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "rgba(16,185,129,0.10)", color: "#34d399", border: "1px solid rgba(16,185,129,0.20)", display: "flex", alignItems: "center", gap: 5 }}>
-                                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", display: "inline-block", animation: "pulse 1.5s infinite" }} />
-                                        {liveOrders.length} active order{liveOrders.length > 1 ? "s" : ""}
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold
+                    bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        {liveOrders.length} active
                                     </span>
                                 )}
                             </div>
-                            <p style={{ fontSize: 13, color: "#a89060", margin: "4px 0 0" }}>{dbUser?.email ?? sessionUser?.email ?? "—"}</p>
-                            <p style={{ fontSize: 11, color: "#4a3f28", margin: "3px 0 0" }}>Member since {memberSince}</p>
+                            <p className="text-sm text-zinc-400 truncate">{dbUser?.email ?? sessionUser?.email ?? "—"}</p>
+                            <p className="text-[11px] text-zinc-600 mt-0.5">Member since {memberSince}</p>
                         </div>
+
                         {/* Sign out */}
-                        <button onClick={() => signOut({ callbackUrl: "/sign-in" })} style={{
-                            padding: "0.5rem 1.1rem", background: "rgba(239,68,68,0.07)",
-                            border: "1px solid rgba(239,68,68,0.18)", borderRadius: 10,
-                            color: "#f87171", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: BASE,
-                        }}>Sign Out</button>
+                        <button
+                            onClick={() => signOut({ callbackUrl: "/sign-in" })}
+                            className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold
+                bg-red-500/[0.07] text-red-400 border border-red-500/15
+                hover:bg-red-500/15 hover:border-red-500/25
+                active:scale-95 transition-all duration-150">
+                            <LogOut className="h-3.5 w-3.5" /> Sign out
+                        </button>
                     </div>
                 </div>
 
-                {/* ── Stats ── */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.875rem", marginBottom: "1.1rem" }}>
+                {/* ── Stats row ── */}
+                <div className="grid grid-cols-3 gap-2.5 mb-3">
                     {[
-                        { label: "Total Orders", value: loading ? "…" : stats.totalOrders },
-                        { label: "Total Spent", value: loading ? "…" : `₹${stats.totalSpent}` },
-                        { label: "Favourite", value: loading ? "…" : (stats.favoriteItem || "—") },
+                        { label: "Orders", value: loading ? "…" : String(stats.totalOrders), icon: <ShoppingBag className="h-4 w-4" /> },
+                        { label: "Spent", value: loading ? "…" : `₹${stats.totalSpent.toLocaleString("en-IN")}`, icon: <Trophy className="h-4 w-4" /> },
+                        { label: "Favourite", value: loading ? "…" : (stats.favoriteItem ?? "—"), icon: <Flame className="h-4 w-4" /> },
                     ].map((s) => (
-                        <div key={s.label} style={{ ...glass, padding: "1rem", textAlign: "center", borderRadius: 16 }}>
-                            <p style={{ fontSize: 20, fontWeight: 800, margin: 0, color: AMBER, textShadow: "0 0 16px rgba(245,158,11,0.35)" }}>{s.value}</p>
-                            <p style={{ fontSize: 10, color: "#6b5e3e", margin: "5px 0 0", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>{s.label}</p>
-                        </div>
-                    ))}
-                </div>
-
-                {/* ── Brownie Points ── */}
-                <div style={{ ...glass, padding: "1.5rem 1.75rem", marginBottom: "1.1rem", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(245,158,11,0.06)", filter: "blur(30px)", pointerEvents: "none" }} />
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", position: "relative" }}>
-                        <div>
-                            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "#6b5e3e", textTransform: "uppercase", letterSpacing: "0.15em" }}>🍪 Brownie Points</p>
-                            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                                <span style={{ fontSize: 44, fontWeight: 900, color: AMBER, textShadow: "0 0 20px rgba(245,158,11,0.4)", lineHeight: 1 }}>{loading ? "…" : stats.browniePoints}</span>
-                                <span style={{ fontSize: 13, color: "#6b5e3e", fontWeight: 600 }}>pts</span>
+                        <div key={s.label}
+                            className="group relative rounded-2xl px-4 py-3.5 overflow-hidden
+                bg-white/[0.04] backdrop-blur-xl
+                border border-white/[0.07]
+                hover:border-amber-500/20 hover:bg-white/[0.06]
+                shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]
+                transition-all duration-200">
+                            <div className="pointer-events-none absolute -top-4 -right-4 w-16 h-16 rounded-full bg-amber-500/[0.05] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="flex items-center gap-2 mb-2 text-zinc-600 group-hover:text-amber-500/60 transition-colors duration-200">
+                                {s.icon}
                             </div>
-                            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#4a3f28" }}>Earn 13 pts per ₹200 spent · 1 pt = ₹1 discount</p>
+                            <p className="text-lg font-black text-amber-400 truncate leading-none mb-1">{s.value}</p>
+                            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{s.label}</p>
                         </div>
-                        <div style={{ textAlign: "right", flexShrink: 0 }}>
-                            <span style={{ fontSize: 28 }}>{tier.emoji}</span>
-                            <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 700, color: AMBER }}>{tier.name}</p>
-                            <p style={{ margin: "2px 0 0", fontSize: 11, color: "#6b5e3e" }}>{tier.perks}</p>
-                        </div>
-                    </div>
-                    {/* Progress */}
-                    <div style={{ marginTop: "1.25rem", position: "relative" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                            <span style={{ fontSize: 11, color: "#6b5e3e" }}>
-                                {nextTier ? `${stats.browniePoints} / ${nextTier.min} pts to ${nextTier.emoji} ${nextTier.name}` : "Maximum tier reached 👑"}
-                            </span>
-                            <span style={{ fontSize: 11, color: AMBER, fontWeight: 700 }}>{progress}%</span>
-                        </div>
-                        <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                            <div style={{ height: "100%", borderRadius: 99, width: `${progress}%`, background: "linear-gradient(90deg,#eab308,#f59e0b)", boxShadow: "0 0 10px rgba(245,158,11,0.4)", transition: "width 0.8s ease" }} />
-                        </div>
-                    </div>
-                    {/* Tier cards */}
-                    <div style={{ display: "flex", gap: 8, marginTop: "1.1rem", flexWrap: "wrap" }}>
-                        {TIERS.map((t) => {
-                            const unlocked = stats.browniePoints >= t.min;
-                            return (
-                                <div key={t.name} style={{
-                                    flex: 1, minWidth: 90, padding: "0.6rem 0.75rem", borderRadius: 10,
-                                    background: unlocked ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.02)",
-                                    border: unlocked ? "1px solid rgba(245,158,11,0.2)" : "1px solid rgba(255,255,255,0.05)",
-                                    opacity: unlocked ? 1 : 0.4, transition: "all 0.2s",
-                                }}>
-                                    <p style={{ margin: 0, fontSize: 18 }}>{t.emoji}</p>
-                                    <p style={{ margin: "4px 0 0", fontSize: 11, fontWeight: 700, color: unlocked ? AMBER : "#6b5e3e" }}>{t.name}</p>
-                                    <p style={{ margin: "2px 0 0", fontSize: 10, color: "#4a3f28" }}>{t.min}+ pts</p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* ── Main Tabs ── */}
-                <div style={{ display: "flex", gap: 4, marginBottom: "1.1rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 13, padding: 4 }}>
-                    {(["orders", "account"] as const).map((tab) => (
-                        <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                            flex: 1, padding: "0.55rem 0", border: "none", cursor: "pointer",
-                            fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-                            borderRadius: 10, transition: "all 0.2s ease", fontFamily: BASE,
-                            background: activeTab === tab ? "linear-gradient(135deg,#eab308,#f59e0b)" : "transparent",
-                            color: activeTab === tab ? "#0a0a0a" : "#5a4e35",
-                            boxShadow: activeTab === tab ? "0 2px 12px rgba(245,158,11,0.35)" : "none",
-                        }}>{tab}</button>
                     ))}
                 </div>
 
-                {/* ══ Orders Tab ══ */}
+                {/* ── Brownie Points card ── */}
+                <div className="relative rounded-2xl overflow-hidden mb-3
+          bg-white/[0.04] backdrop-blur-xl
+          border border-amber-500/[0.12]
+          shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]">
+
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent pointer-events-none" />
+                    <div className="pointer-events-none absolute -top-8 right-10 w-40 h-20 bg-amber-500/[0.07] blur-3xl rounded-full" />
+
+                    <div className="relative p-5">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.15em] mb-2">
+                                    🍪 Brownie Points
+                                </p>
+                                <div className="flex items-baseline gap-1.5">
+                                    <span className="text-5xl font-black text-amber-400 leading-none
+                    [text-shadow:0_0_30px_rgba(245,158,11,0.35)]">
+                                        {loading ? "…" : stats.browniePoints}
+                                    </span>
+                                    <span className="text-sm font-semibold text-zinc-500">pts</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-600 mt-1.5">
+                                    Earn 13 pts per ₹200 · 1 pt = ₹1 discount
+                                </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                                <span className="text-3xl">{tier.emoji}</span>
+                                <p className="text-sm font-bold text-amber-400 mt-1">{tier.name}</p>
+                                <p className="text-[11px] text-zinc-600">{tier.perks}</p>
+                            </div>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="mb-4">
+                            <div className="flex justify-between text-[11px] mb-1.5">
+                                <span className="text-zinc-600">
+                                    {nextTier
+                                        ? `${stats.browniePoints} / ${nextTier.min} pts → ${nextTier.emoji} ${nextTier.name}`
+                                        : "Maximum tier reached 👑"
+                                    }
+                                </span>
+                                <span className="text-amber-400 font-bold">{progress}%</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400
+                    shadow-[0_0_10px_rgba(245,158,11,0.4)] transition-all duration-700 ease-out"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Tier cards */}
+                        <div className="grid grid-cols-3 gap-2">
+                            {TIERS.map((t) => {
+                                const unlocked = stats.browniePoints >= t.min;
+                                return (
+                                    <div key={t.name}
+                                        className={`rounded-xl px-3 py-2.5 border transition-all duration-200
+                      ${unlocked
+                                                ? "bg-amber-500/[0.07] border-amber-500/20"
+                                                : "bg-white/[0.02] border-white/[0.05] opacity-40"
+                                            }`}>
+                                        <p className="text-xl mb-1">{t.emoji}</p>
+                                        <p className={`text-[11px] font-bold ${unlocked ? "text-amber-400" : "text-zinc-600"}`}>{t.name}</p>
+                                        <p className="text-[10px] text-zinc-700 mt-0.5">{t.min}+ pts</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Main tabs ── */}
+                <div className="flex gap-1 p-1 rounded-xl mb-3
+          bg-white/[0.03] border border-white/[0.07]">
+                    {(["orders", "account"] as const).map((tab) => (
+                        <button key={tab} onClick={() => setActiveTab(tab)}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold uppercase tracking-wider
+                transition-all duration-200 active:scale-[0.98]
+                ${activeTab === tab
+                                    ? "bg-amber-500 text-zinc-950 shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
+                                    : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"
+                                }`}>
+                            {tab === "orders" ? <ShoppingBag className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+                            {tab}
+                        </button>
+                    ))}
+                </div>
+
+                {/* ══ Orders tab ══ */}
                 {activeTab === "orders" && (
                     <div>
-                        {/* Sub-tabs: Live / History */}
-                        <div style={{ display: "flex", gap: 4, marginBottom: "0.875rem", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 11, padding: 3 }}>
-                            <button onClick={() => setOrdersTab("live")} style={{
-                                flex: 1, padding: "0.45rem 0", border: "none", cursor: "pointer",
-                                fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase",
-                                borderRadius: 8, transition: "all 0.2s", fontFamily: BASE,
-                                background: ordersTab === "live"
-                                    ? liveOrders.length > 0 ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.06)"
-                                    : "transparent",
-                                color: ordersTab === "live" ? (liveOrders.length > 0 ? AMBER : "#fff") : "#4a3f28",
-                                border: ordersTab === "live" && liveOrders.length > 0 ? "1px solid rgba(245,158,11,0.25)" : "1px solid transparent",
-                            }}>
-                                {liveOrders.length > 0 && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: AMBER, marginRight: 5, verticalAlign: "middle", animation: "pulse 1.5s infinite" }} />}
-                                Live {liveOrders.length > 0 ? `(${liveOrders.length})` : ""}
-                            </button>
-                            <button onClick={() => setOrdersTab("history")} style={{
-                                flex: 1, padding: "0.45rem 0", border: "none", cursor: "pointer",
-                                fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase",
-                                borderRadius: 8, transition: "all 0.2s", fontFamily: BASE,
-                                background: ordersTab === "history" ? "rgba(255,255,255,0.06)" : "transparent",
-                                color: ordersTab === "history" ? "#fff" : "#4a3f28",
-                            }}>
-                                History {historyOrders.length > 0 ? `(${historyOrders.length})` : ""}
-                            </button>
+                        {/* Sub-tabs */}
+                        <div className="flex gap-1 p-1 rounded-xl mb-3
+              bg-white/[0.02] border border-white/[0.06]">
+                            {(["live", "history"] as const).map((t) => {
+                                const count = t === "live" ? liveOrders.length : historyOrders.length;
+                                const isActive = ordersTab === t;
+                                return (
+                                    <button key={t} onClick={() => setOrdersTab(t)}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider
+                      transition-all duration-200 active:scale-[0.98]
+                      ${isActive
+                                                ? t === "live" && liveOrders.length > 0
+                                                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                                                    : "bg-white/[0.07] text-white border border-white/[0.10]"
+                                                : "text-zinc-600 hover:text-zinc-400 hover:bg-white/[0.03]"
+                                            }`}>
+                                        {t === "live" && liveOrders.length > 0 && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                        )}
+                                        {t}
+                                        {count > 0 && (
+                                            <span className={`flex items-center justify-center h-4 w-4 rounded-full text-[9px] font-black
+                        ${isActive
+                                                    ? t === "live" && liveOrders.length > 0 ? "bg-amber-500/20 text-amber-400" : "bg-white/15 text-white"
+                                                    : "bg-white/[0.06] text-zinc-500"
+                                                }`}>
+                                                {count}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
 
-                        {/* ── Live orders ── */}
+                        {/* Live orders */}
                         {ordersTab === "live" && (
-                            <div>
-                                {loading ? (
-                                    <div style={{ ...glass, padding: "2.5rem", textAlign: "center", color: "#4a3f28", borderRadius: 16 }}>Loading orders…</div>
-                                ) : liveOrders.length === 0 ? (
-                                    <div style={{ ...glass, padding: "3rem", textAlign: "center", borderRadius: 16 }}>
-                                        <p style={{ fontSize: 28, margin: "0 0 0.5rem" }}>🍵</p>
-                                        <p style={{ color: "#4a3f28", margin: 0, fontSize: 13 }}>No active orders right now</p>
-                                        <p style={{ color: "#3a3020", margin: "4px 0 0", fontSize: 11 }}>Place an order from the menu to track it here</p>
-                                    </div>
-                                ) : (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                                        {liveOrders.map((order) => (
-                                            <LiveOrderTracker key={order._id} order={order} />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            loading ? (
+                                <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-10 text-center text-sm text-zinc-600">
+                                    Loading orders…
+                                </div>
+                            ) : liveOrders.length === 0 ? (
+                                <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-12 text-center">
+                                    <p className="text-3xl mb-2">🍵</p>
+                                    <p className="text-sm font-medium text-zinc-500">No active orders</p>
+                                    <p className="text-xs text-zinc-700 mt-1">Place an order from the menu to track it here</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {liveOrders.map((o) => <LiveOrderTracker key={o._id} order={o} />)}
+                                </div>
+                            )
                         )}
 
-                        {/* ── History table ── */}
+                        {/* History */}
                         {ordersTab === "history" && (
-                            <div style={{ ...glass, overflow: "hidden" }}>
-                                <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
-                                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#fff" }}>Order History</p>
-                                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "rgba(245,158,11,0.12)", color: AMBER, border: "1px solid rgba(245,158,11,0.2)" }}>
-                                        {historyOrders.length}
-                                    </span>
+                            <div className="rounded-2xl overflow-hidden
+                bg-white/[0.03] backdrop-blur-xl
+                border border-white/[0.07]
+                shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.05)]">
+
+                                <div className="flex items-center gap-2.5 px-5 py-4 border-b border-white/[0.06]">
+                                    <p className="text-sm font-bold text-white">Order History</p>
+                                    {historyOrders.length > 0 && (
+                                        <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/12 text-amber-400 border border-amber-400/20">
+                                            {historyOrders.length}
+                                        </span>
+                                    )}
                                 </div>
 
                                 {loading ? (
-                                    <div style={{ padding: "3rem", textAlign: "center", color: "#4a3f28" }}>Loading orders…</div>
+                                    <div className="p-10 text-center text-sm text-zinc-600">Loading…</div>
                                 ) : historyOrders.length === 0 ? (
-                                    <div style={{ padding: "3rem", textAlign: "center" }}>
-                                        <p style={{ fontSize: 28, margin: "0 0 0.5rem" }}>📋</p>
-                                        <p style={{ color: "#4a3f28", margin: 0 }}>No completed orders yet</p>
+                                    <div className="p-12 text-center">
+                                        <p className="text-3xl mb-2">📋</p>
+                                        <p className="text-sm text-zinc-500">No completed orders yet</p>
                                     </div>
                                 ) : (
-                                    <div style={{ overflowX: "auto" }}>
-                                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, fontFamily: BASE }}>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-xs" style={{ minWidth: 520 }}>
                                             <thead>
-                                                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                                                <tr className="border-b border-white/[0.05]">
                                                     {["Order", "Items", "Type", "Status", "Date", "Total"].map((h) => (
-                                                        <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#4a3f28", textTransform: "uppercase", letterSpacing: "0.12em" }}>{h}</th>
+                                                        <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-zinc-600 uppercase tracking-widest whitespace-nowrap">
+                                                            {h}
+                                                        </th>
                                                     ))}
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {historyOrders.map((order, i) => {
-                                                    const s = STATUS_STYLE[order.status];
+                                                    const s = STATUS_META[order.status];
                                                     return (
-                                                        <tr key={order._id} style={{
-                                                            borderBottom: i < historyOrders.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
-                                                            background: i % 2 !== 0 ? "rgba(255,255,255,0.015)" : "transparent",
-                                                        }}>
-                                                            <td style={{ padding: "12px 16px" }}>
-                                                                <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 800, color: AMBER }}>#{order.orderNumber}</span>
+                                                        <tr key={order._id}
+                                                            className={`border-b border-white/[0.03] transition-colors hover:bg-white/[0.025]
+                                ${i % 2 !== 0 ? "bg-white/[0.015]" : ""}`}>
+                                                            <td className="px-4 py-3 font-mono font-black text-amber-400 whitespace-nowrap">
+                                                                #{order.orderNumber}
                                                             </td>
-                                                            <td style={{ padding: "12px 16px", color: "#a89060", maxWidth: 180 }}>
-                                                                <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                            <td className="px-4 py-3 text-zinc-400 max-w-[160px]">
+                                                                <span className="block truncate">
                                                                     {order.items.map((it) => `${it.name} ×${it.quantity}`).join(", ")}
                                                                 </span>
                                                             </td>
-                                                            <td style={{ padding: "12px 16px" }}>
-                                                                <span style={{
-                                                                    fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 6,
-                                                                    background: order.type === "dine-in" ? "rgba(14,165,233,0.12)" : "rgba(139,92,246,0.12)",
-                                                                    color: order.type === "dine-in" ? "#38bdf8" : "#a78bfa",
-                                                                    border: order.type === "dine-in" ? "1px solid rgba(14,165,233,0.25)" : "1px solid rgba(139,92,246,0.25)",
-                                                                }}>
+                                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border
+                                  ${order.type === "dine-in"
+                                                                        ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                                                                        : "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                                                                    }`}>
                                                                     {order.type === "dine-in" ? "Dine In" : "Takeaway"}
                                                                 </span>
                                                             </td>
-                                                            <td style={{ padding: "12px 16px" }}>
-                                                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 6, background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>
+                                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.bg} ${s.text} ${s.border}`}>
                                                                     {s.icon}{s.label}
                                                                 </span>
                                                             </td>
-                                                            <td style={{ padding: "12px 16px", color: "#6b5e3e", fontSize: 11 }}>{formatDate(order.createdAt)}</td>
-                                                            <td style={{ padding: "12px 16px" }}>
-                                                                <span style={{ fontWeight: 800, color: "#fff", fontSize: 13 }}>₹{order.total}</span>
+                                                            <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">
+                                                                {formatDate(order.createdAt)}
+                                                            </td>
+                                                            <td className="px-4 py-3 font-black text-white whitespace-nowrap">
+                                                                ₹{order.total}
                                                             </td>
                                                         </tr>
                                                     );
@@ -561,81 +579,149 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* ══ Account Tab ══ */}
+                {/* ══ Account tab ══ */}
                 {activeTab === "account" && (
-                    <div style={{ ...glass, padding: "1.5rem" }}>
-                        <p style={{ margin: "0 0 1.25rem", fontSize: 14, fontWeight: 700, color: "#fff" }}>Edit Profile</p>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                            <div>
-                                <label style={labelStyle}>Username</label>
-                                <input value={userName} onChange={(e) => setUserName(e.target.value)} style={inputStyle} placeholder="Your username"
-                                    onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-                                    onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.10)")} />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Phone</label>
-                                <input value={phone} onChange={(e) => setPhone(e.target.value)} style={inputStyle} placeholder="10-digit mobile"
-                                    onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-                                    onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.10)")} />
-                            </div>
-                            <div style={{ gridColumn: "1 / -1" }}>
-                                <label style={labelStyle}>Email</label>
-                                <input value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} placeholder="your@email.com" type="email"
-                                    onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-                                    onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.10)")} />
-                            </div>
-                            <div style={{ gridColumn: "1 / -1" }}>
-                                <label style={labelStyle}>Member Since</label>
-                                <div style={{ ...inputStyle, color: "#4a3f28", cursor: "default", display: "flex", alignItems: "center" }}>{memberSince}</div>
-                            </div>
+                    <div className="rounded-2xl overflow-hidden
+            bg-white/[0.04] backdrop-blur-xl
+            border border-white/[0.08]
+            shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]">
+
+                        <div className="px-5 py-4 border-b border-white/[0.06]">
+                            <p className="text-sm font-bold text-white">Edit Profile</p>
+                            <p className="text-[11px] text-zinc-600 mt-0.5">Update your account details</p>
                         </div>
 
-                        {/* Password */}
-                        <div style={{ marginTop: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1.25rem" }}>
-                            <button onClick={() => { setShowPass(!showPass); setCurrentPassword(""); setNewPassword(""); }}
-                                style={{ background: "none", border: "none", color: AMBER, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: BASE }}>
-                                {showPass ? "✕ Cancel password change" : "🔒 Change password"}
-                            </button>
-                            {showPass && (
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1rem" }}>
-                                    <div>
-                                        <label style={labelStyle}>Current Password</label>
-                                        <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} style={inputStyle} placeholder="••••••••"
-                                            onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-                                            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.10)")} />
-                                    </div>
-                                    <div>
-                                        <label style={labelStyle}>New Password</label>
-                                        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={inputStyle} placeholder="Min 6 characters"
-                                            onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-                                            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.10)")} />
+                        <div className="p-5 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Username */}
+                                <div className="space-y-1.5">
+                                    <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-[0.12em]">
+                                        Username
+                                    </label>
+                                    <input
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        placeholder="Your username"
+                                        className="w-full h-10 px-3.5 rounded-xl text-sm text-white placeholder:text-zinc-600
+                      bg-white/[0.05] border border-white/[0.09]
+                      focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.08]
+                      transition-all duration-200"
+                                    />
+                                </div>
+
+                                {/* Phone */}
+                                <div className="space-y-1.5">
+                                    <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-[0.12em]">
+                                        Phone
+                                    </label>
+                                    <input
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        placeholder="10-digit mobile"
+                                        className="w-full h-10 px-3.5 rounded-xl text-sm text-white placeholder:text-zinc-600
+                      bg-white/[0.05] border border-white/[0.09]
+                      focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.08]
+                      transition-all duration-200"
+                                    />
+                                </div>
+
+                                {/* Email */}
+                                <div className="space-y-1.5 sm:col-span-2">
+                                    <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-[0.12em]">
+                                        Email
+                                    </label>
+                                    <input
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="your@email.com"
+                                        type="email"
+                                        className="w-full h-10 px-3.5 rounded-xl text-sm text-white placeholder:text-zinc-600
+                      bg-white/[0.05] border border-white/[0.09]
+                      focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.08]
+                      transition-all duration-200"
+                                    />
+                                </div>
+
+                                {/* Member since (read-only) */}
+                                <div className="space-y-1.5 sm:col-span-2">
+                                    <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-[0.12em]">
+                                        Member Since
+                                    </label>
+                                    <div className="h-10 px-3.5 rounded-xl text-sm text-zinc-500 flex items-center
+                    bg-white/[0.02] border border-white/[0.05] cursor-not-allowed select-none">
+                                        {memberSince}
                                     </div>
                                 </div>
-                            )}
-                        </div>
-
-                        {saveMsg && (
-                            <div style={{
-                                marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: 10,
-                                background: saveMsg.type === "success" ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
-                                border: `1px solid ${saveMsg.type === "success" ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
-                                color: saveMsg.type === "success" ? "#34d399" : "#f87171",
-                                fontSize: 13, fontWeight: 600
-                            }}>
-                                {saveMsg.text}
                             </div>
-                        )}
 
-                        <button onClick={handleSave} disabled={saving} style={{
-                            marginTop: "1.25rem", width: "100%", padding: "0.875rem",
-                            borderRadius: 12, border: "none", cursor: saving ? "not-allowed" : "pointer",
-                            background: "linear-gradient(135deg,#eab308,#f59e0b)",
-                            color: "#0a0a0a", fontSize: 14, fontWeight: 800,
-                            opacity: saving ? 0.7 : 1,
-                            boxShadow: "0 4px 20px rgba(245,158,11,0.25)", transition: "all 0.15s",
-                        }}>
-                            {saving ? "Saving…" : "Save Changes"}
-                        </button>
+                            {/* Password section */}
+                            <div className="pt-1 border-t border-white/[0.06]">
+                                <button
+                                    onClick={() => { setShowPass(!showPass); setCurrentPassword(""); setNewPassword(""); }}
+                                    className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors duration-150 active:scale-[0.98]">
+                                    {showPass ? "✕ Cancel password change" : "🔒 Change password"}
+                                </button>
+
+                                {showPass && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                                        <div className="space-y-1.5">
+                                            <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-[0.12em]">
+                                                Current Password
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                placeholder="••••••••"
+                                                className="w-full h-10 px-3.5 rounded-xl text-sm text-white placeholder:text-zinc-600
+                          bg-white/[0.05] border border-white/[0.09]
+                          focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.08]
+                          transition-all duration-200"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-[0.12em]">
+                                                New Password
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                placeholder="Min 6 characters"
+                                                className="w-full h-10 px-3.5 rounded-xl text-sm text-white placeholder:text-zinc-600
+                          bg-white/[0.05] border border-white/[0.09]
+                          focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.08]
+                          transition-all duration-200"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Save message */}
+                            {saveMsg && (
+                                <div className={`px-4 py-3 rounded-xl text-xs font-semibold border
+                  ${saveMsg.type === "success"
+                                        ? "bg-emerald-500/[0.08] border-emerald-500/20 text-emerald-400"
+                                        : "bg-red-500/[0.08] border-red-500/20 text-red-400"
+                                    }`}>
+                                    {saveMsg.text}
+                                </div>
+                            )}
+
+                            {/* Save button */}
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="w-full py-3 rounded-xl text-sm font-black text-zinc-950
+                  bg-amber-500 hover:bg-amber-400
+                  shadow-[0_4px_20px_rgba(245,158,11,0.25)]
+                  hover:shadow-[0_4px_28px_rgba(245,158,11,0.4)]
+                  active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed
+                  transition-all duration-150">
+                                {saving ? "Saving…" : "Save Changes"}
+                            </button>
+                        </div>
                     </div>
                 )}
 
