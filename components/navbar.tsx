@@ -142,6 +142,9 @@ export default function Navbar() {
     };
   }, [drawerOpen]);
 
+  // Hide navbar on dashboard
+  if (pathname?.startsWith("/dashboard")) return null;
+
   const toggleNotes = (id: string) => setExpandedNotes((p) => ({ ...p, [id]: !p[id] }));
   const setNote = (id: string, val: string) => setItemNotes((p) => ({ ...p, [id]: val }));
   const toggleCollapse = (id: string) => setCollapsedOrders((p) => ({ ...p, [id]: !p[id] }));
@@ -179,7 +182,6 @@ export default function Navbar() {
       clearCart();
       setItemNotes({});
       setExpandedNotes({});
-      // Switch to live tab so user sees the new order
       setCartTab("live");
     } catch (err: any) {
       alert(err.message ?? "Checkout failed. Try again.");
@@ -199,7 +201,7 @@ export default function Navbar() {
   // ─── Order card renderer (shared between tabs) ────────────────────────────
   function OrderCard({ order }: { order: PlacedOrder }) {
     const stepIndex = STATUS_STEPS.findIndex((s) => s.key === order.status);
-    const isCollapsed = collapsedOrders[order.orderId] ?? (cartTab === "history"); // history collapsed by default
+    const isCollapsed = collapsedOrders[order.orderId] ?? (cartTab === "history");
     const isDone = order.status === "completed" || order.status === "cancelled";
 
     return (
@@ -256,7 +258,6 @@ export default function Navbar() {
         }}>
           <div className="relative px-4 pb-4 pt-1 border-t border-white/[0.06] space-y-1">
             {isDone ? (
-              /* Compact summary for completed/cancelled */
               <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border
                 ${order.status === "completed"
                   ? "bg-emerald-500/[0.06] border-emerald-500/15"
@@ -272,7 +273,6 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
-              /* Live stepper */
               STATUS_STEPS.map((step, i) => {
                 const isDoneStep = i < stepIndex;
                 const isActiveStep = i === stepIndex;
@@ -524,7 +524,6 @@ export default function Navbar() {
           {placedOrders.length > 0 && (
             <div className="px-4 pt-3 space-y-2.5">
 
-              {/* Empty state per tab */}
               {visibleOrders.length === 0 && (
                 <div className="flex flex-col items-center gap-2 py-8 text-center">
                   {cartTab === "live" ? (
@@ -546,7 +545,6 @@ export default function Navbar() {
                 <OrderCard key={order.orderId} order={order} />
               ))}
 
-              {/* Divider before cart items */}
               {cartTab === "live" && cartItems.length > 0 && visibleOrders.length > 0 && (
                 <div className="flex items-center gap-3 pt-1">
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />

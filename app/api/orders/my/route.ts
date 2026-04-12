@@ -8,32 +8,37 @@ import UserModel from "@/model/user";
 export async function GET() {
     try {
         const session = await getServerSession(authOptions);
-        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!session) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         await dbConnect();
-        const user = session.user as any;
-        const userId = user._id ?? user.id;
 
+        const email = (session.user as any).email;
+
+        // Fetch all orders for this user, newest first
         const orders = await OrderModel
-            .find({ "customer.userId": userId.toString() })
+            .find({ "customer.email": email })
             .sort({ createdAt: -1 })
             .lean();
 
-        const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
+        // ── Compute stats ──────────────────────────────────────────────────────
+        const completedOrders = orders.filter((o) => o.status === "completed");
 
-        // Find favourite item
+        const totalSpent = completedOrders.reduce((s, o) => s + o.total, 0);
+
+        // Favorite item — most ordered by quantity across completed orders
         const itemCount: Record<string, number> = {};
-        orders.forEach((o) => {
-            o.items.forEach((i: any) => {
-                itemCount[i.name] = (itemCount[i.name] ?? 0) + i.quantity;
-            });
-        });
+        for (const order of completedOrders) {
+            for (const item of order.items as any[]) {
+                itemCount[item.name] = (itemCount[item.name] ?? 0) + item.quantity;
+            }
+        }
         const favoriteItem = Object.entries(itemCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
 
-        // Add this after fetching orders
-        const dbUser = await UserModel.findById(userId.toString())
-            .select("browniePoints createdAt")
-            .lean();
+        // Brownie points — always fetch fresh from UserModel
+        const user = await UserModel.findOne({ email }, { browniePoints: 1 }).lean();
+        const browniePoints = (user as any)?.browniePoints ?? 0;
 
         return NextResponse.json({
             success: true,
@@ -42,12 +47,9 @@ export async function GET() {
                 totalOrders: orders.length,
                 totalSpent,
                 favoriteItem,
-                browniePoints: (dbUser as any)?.browniePoints ?? 0,
-                memberSince: (dbUser as any)?.createdAt,
+                browniePoints,
             },
         });
-
-
     } catch (err) {
         console.error("[GET /api/orders/my]", err);
         return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });

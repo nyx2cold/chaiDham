@@ -10,6 +10,7 @@ export interface IMenuItem extends Document {
   isBestseller: boolean;
   isAvailable: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const MenuItemSchema = new Schema<IMenuItem>(

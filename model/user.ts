@@ -13,6 +13,9 @@ export interface User extends Document {
   resetCode: string | null
   resetCodeExpire: Date | null
   browniePoints: number
+  createdAt: Date
+  updatedAt: Date
+  isBanned: boolean
 }
 
 const UserSchema: Schema<User> = new Schema(
@@ -75,6 +78,7 @@ const UserSchema: Schema<User> = new Schema(
       type: Number,
       default: 0,
     },
+    isBanned: { type: Boolean, default: false },
   },
   {
     timestamps: true, // adds createdAt and updatedAt automatically

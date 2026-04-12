@@ -7,6 +7,7 @@ import { OrdersTable } from "@/components/admin/orders-table";
 import { MenuManager } from "@/components/admin/menu-manager";
 import { OrdersOverviewChart } from "@/components/admin/orders-overview-chart";
 import { StatsCards } from "@/components/admin/stats-card";
+import { CustomersTable } from "@/components/admin/customers-table";
 import {
   Bell, LayoutDashboard, ShoppingBag, UtensilsCrossed,
   BarChart3, Users, Tag, Truck, ClipboardList, TrendingUp,
@@ -125,8 +126,10 @@ export default function AdminDashboardPage() {
             </>
           )}
 
+          {tab === "customers" && <CustomersTable />}
+
           {/* ── Manage tabs — placeholder pages ── */}
-          {(["customers", "categories", "order-tracking", "reports", "revenue",
+          {(["categories", "order-tracking", "reports", "revenue",
             "data-library", "settings", "notifications", "help", "search"] as AdminTab[])
             .includes(tab) && (
               <PlaceholderPage meta={meta} />

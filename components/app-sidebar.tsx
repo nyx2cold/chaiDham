@@ -27,22 +27,22 @@ import React from "react";
 
 const MANAGE_NAV = [
     { label: "Customers", href: "/dashboard?tab=customers", icon: Users, tabKey: "customers" },
-    { label: "Categories", href: "/dashboard?tab=categories", icon: Tag, tabKey: "categories" },
+    // { label: "Categories", href: "/dashboard?tab=categories", icon: Tag, tabKey: "categories" },
     { label: "Order Tracking", href: "/dashboard?tab=order-tracking", icon: Truck, tabKey: "order-tracking" },
-    { label: "Reports", href: "/dashboard?tab=reports", icon: ClipboardList, tabKey: "reports" },
+    // { label: "Reports", href: "/dashboard?tab=reports", icon: ClipboardList, tabKey: "reports" },
     { label: "Revenue", href: "/dashboard?tab=revenue", icon: TrendingUp, tabKey: "revenue" },
 ];
 
-const DOCS_NAV = [
-    { label: "Data Library", href: "/dashboard?tab=data-library", icon: FileText, tabKey: "data-library" },
-];
+// const DOCS_NAV = [
+//     { label: "Data Library", href: "/dashboard?tab=data-library", icon: FileText, tabKey: "data-library" },
+// ];
 
 const BOTTOM_NAV = [
     { label: "Settings", href: "/dashboard?tab=settings", icon: Settings, tabKey: "settings" },
-    { label: "Notifications", href: "/dashboard?tab=notifications", icon: Bell, badge: "3", tabKey: "notifications" },
+    // { label: "Notifications", href: "/dashboard?tab=notifications", icon: Bell, badge: "3", tabKey: "notifications" },
     { label: "Get Help", href: "/dashboard?tab=help", icon: HelpCircle, tabKey: "help" },
-    { label: "Search", href: "/dashboard?tab=search", icon: Search, tabKey: "search" },
-    { label: "Back to Site", href: "/", icon: Home, exact: true },
+    // { label: "Search", href: "/dashboard?tab=search", icon: Search, tabKey: "search" },
+    // { label: "Back to Site", href: "/", icon: Home, exact: true },
 ];
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -138,10 +138,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 
     const MAIN_NAV = [
-        { label: "Overview", href: "/dashboard", icon: LayoutDashboard, exact: true },
+        // { label: "Overview", href: "/dashboard", icon: LayoutDashboard, exact: true },
         { label: "Orders", href: "/dashboard?tab=orders", icon: ShoppingBag, badge: pendingCount > 0 ? String(pendingCount) : undefined, tabKey: "orders" },
         { label: "Menu", href: "/dashboard?tab=menu", icon: UtensilsCrossed, tabKey: "menu" },
         { label: "Analytics", href: "/dashboard?tab=analytics", icon: BarChart3, tabKey: "analytics" },
+        { label: "Back to site", href: "/", icon: Home, exact: true },
+
     ];
     const { data: session } = useSession();
 
@@ -196,7 +198,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarSeparator className="bg-white/[0.06] my-2" />
 
                 {/* Documents */}
-                <SidebarGroup className="p-0">
+                {/* <SidebarGroup className="p-0">
                     <SidebarGroupLabel className="px-3 mb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
                         Documents
                     </SidebarGroupLabel>
@@ -205,7 +207,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenu>
                 </SidebarGroup>
 
-                <SidebarSeparator className="bg-white/[0.06] my-2" />
+                <SidebarSeparator className="bg-white/[0.06] my-2" /> */}
 
                 {/* Bottom */}
                 <SidebarGroup className="p-0">

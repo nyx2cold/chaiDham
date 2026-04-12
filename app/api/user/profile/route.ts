@@ -1,32 +1,106 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbconnect";
 import UserModel from "@/model/user";
-import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
-import { authOptions } from "../../auth/[...nextauth]/options";
+import bcrypt from "bcryptjs";
+
+export async function GET() {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        await dbConnect();
+
+        const user = await UserModel.findOne(
+            { email: (session.user as any).email },
+            { password: 0, verifyCode: 0, resetCode: 0 }  // strip sensitive fields
+        ).lean();
+
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            success: true,
+            user: {
+                userName: user.userName,       // ✅ matches schema exactly
+                email: user.email,
+                phone: user.phone,
+                createdAt: user.createdAt,
+                browniePoints: user.browniePoints,
+            },
+        });
+    } catch (err) {
+        console.error("[GET /api/user/profile]", err);
+        return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
+    }
+}
 
 export async function PATCH(req: Request) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!session) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         await dbConnect();
-        const user = session.user as any;
-        const { userName, email, phone } = await req.json();
 
-        const dbUser = await UserModel.findById(user._id ?? user.id);
-        if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        const { userName, phone, email, currentPassword, newPassword } = await req.json();
 
-        if (userName) dbUser.userName = userName;
-        if (email) dbUser.email = email;
-        if (phone) dbUser.phone = phone;
-
-        await dbUser.save();
-        return NextResponse.json({ success: true, message: "Profile updated" });
-    } catch (err: any) {
-        if (err.code === 11000) {
-            const field = Object.keys(err.keyPattern)[0];
-            return NextResponse.json({ error: `${field} already taken` }, { status: 400 });
+        const user = await UserModel.findOne({ email: (session.user as any).email });
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
+
+        // ── Basic field updates ───────────────────────────────────────────────
+        if (userName && userName !== user.userName) {
+            // check uniqueness
+            const taken = await UserModel.findOne({ userName, _id: { $ne: user._id } });
+            if (taken) {
+                return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+            }
+            user.userName = userName;
+        }
+
+        if (phone) user.phone = phone;
+
+        // ── Email change ──────────────────────────────────────────────────────
+        if (email && email !== user.email) {
+            const taken = await UserModel.findOne({ email, _id: { $ne: user._id } });
+            if (taken) {
+                return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+            }
+            user.email = email;
+        }
+
+        // ── Password change ───────────────────────────────────────────────────
+        if (currentPassword && newPassword) {
+            const valid = await bcrypt.compare(currentPassword, user.password);
+            if (!valid) {
+                return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
+            }
+            if (newPassword.length < 6) {
+                return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 });
+            }
+            user.password = await bcrypt.hash(newPassword, 10);
+        }
+
+        await user.save();
+
+        return NextResponse.json({
+            success: true,
+            user: {
+                userName: user.userName,
+                email: user.email,
+                phone: user.phone,
+                createdAt: user.createdAt,
+                browniePoints: user.browniePoints,
+            },
+        });
+    } catch (err) {
         console.error("[PATCH /api/user/profile]", err);
         return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }

@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner"
 import Navbar from "@/components/navbar";
 import Providers from "@/components/Providers";
 import { CartProvider } from "@/context/cartContext";
+import { BannedBanner } from "@/components/BannedBanner";
 
 const figtree = Figtree({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body>
         <Providers>
           <CartProvider>
+            <BannedBanner />
             <Navbar />
             {children}
             <Toaster theme="dark" richColors position="top-center" />

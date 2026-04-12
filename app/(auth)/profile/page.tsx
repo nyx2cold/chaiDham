@@ -238,29 +238,23 @@ export default function ProfilePage() {
         if (session) load();
     }, [session]);
 
-    // ── Poll live orders every 5s ─────────────────────────────────────────────
-    const refreshLiveOrders = useCallback(async () => {
-        const liveIds = orders
-            .filter((o) => o.status !== "completed" && o.status !== "cancelled")
-            .map((o) => o._id);
-        if (liveIds.length === 0) return;
 
-        try {
-            const res = await fetch("/api/orders/my");
-            const data = await res.json();
-            if (data.success) {
-                setOrders(data.orders);
-                setStats(data.stats);
-            }
-        } catch { }
-    }, [orders]);
-
+    // ── Poll every 5s always ──────────────────────────────────────────────────
     useEffect(() => {
-        const hasLive = orders.some((o) => o.status !== "completed" && o.status !== "cancelled");
-        if (!hasLive) return;
-        const id = setInterval(refreshLiveOrders, 5000);
+        const id = setInterval(async () => {
+            try {
+                const res = await fetch("/api/orders/my");
+                const data = await res.json();
+                if (data.success) {
+                    setOrders(data.orders);
+                    setStats(data.stats);
+                }
+            } catch { }
+        }, 5000);
         return () => clearInterval(id);
-    }, [refreshLiveOrders]);
+    }, []);
+
+
 
     // ── Save profile ──────────────────────────────────────────────────────────
     async function handleSave() {
