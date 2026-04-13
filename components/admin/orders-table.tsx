@@ -87,8 +87,9 @@ export function OrdersTable({ compact }: Props) {
             if (!isBackground) setLoading(true);
             const res = await fetch("/api/orders");
             const data = await res.json();
-            if (data.success && Array.isArray(data.orders)) {
+            if (data.success) {
                 setOrders((prev) => {
+                    // Highlight truly new orders
                     const prevIds = new Set(prev.map((o) => o._id));
                     const incoming: Order[] = data.orders;
                     const brandNew = incoming
@@ -96,6 +97,7 @@ export function OrdersTable({ compact }: Props) {
                         .map((o) => o._id);
                     if (brandNew.length > 0) {
                         setNewOrderIds((s) => new Set([...s, ...brandNew]));
+                        // Clear highlight after 6s
                         setTimeout(() => {
                             setNewOrderIds((s) => {
                                 const next = new Set(s);
@@ -114,6 +116,7 @@ export function OrdersTable({ compact }: Props) {
         }
     }, []);
 
+    // Initial fetch + 5s polling
     useEffect(() => {
         fetchOrders();
         const id = setInterval(() => fetchOrders(true), 5000);
@@ -133,11 +136,10 @@ export function OrdersTable({ compact }: Props) {
                 setOrders((prev) =>
                     prev.map((o) => (o._id === orderId ? { ...o, status } : o))
                 );
+                // Update drawer if open for this order
                 if (selectedOrder?._id === orderId) {
                     setSelectedOrder((o) => o ? { ...o, status } : o);
                 }
-                // ✅ notify analytics to refresh
-                window.dispatchEvent(new CustomEvent("order-status-changed"));
             }
         } catch {
             alert("Failed to update order status.");
@@ -151,10 +153,7 @@ export function OrdersTable({ compact }: Props) {
         setDrawerOpen(true);
     }
 
-    // Guard: always filter on an array
-    const safeOrders = Array.isArray(orders) ? orders : [];
-
-    const filtered = safeOrders.filter((o) => {
+    const filtered = orders.filter((o) => {
         const matchSearch =
             o.customer.name.toLowerCase().includes(search.toLowerCase()) ||
             String(o.orderNumber).includes(search);
@@ -163,8 +162,6 @@ export function OrdersTable({ compact }: Props) {
     });
 
     const displayed = compact ? filtered.slice(0, 5) : filtered;
-
-
 
     return (
         <>
@@ -192,6 +189,7 @@ export function OrdersTable({ compact }: Props) {
                                     <Sparkles className="h-2.5 w-2.5" />
                                     {filtered.length}
                                 </span>
+                                {/* Live pulse */}
                                 <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full
                                     bg-green-500/10 border border-green-500/20
                                     text-[10px] font-medium text-green-400">
@@ -413,6 +411,7 @@ export function OrdersTable({ compact }: Props) {
 
                 {selectedOrder && (
                     <>
+                        {/* Drawer header */}
                         <div className="flex items-center justify-between px-5 py-4
                             border-b border-white/[0.06] bg-white/[0.02] shrink-0">
                             <div className="flex items-center gap-2.5">
@@ -439,13 +438,17 @@ export function OrdersTable({ compact }: Props) {
                             </button>
                         </div>
 
+                        {/* Scrollable body */}
                         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+
+                            {/* Customer info */}
                             <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] px-4 py-3 space-y-1">
                                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold">Customer</p>
                                 <p className="text-sm font-semibold text-white">{selectedOrder.customer.name}</p>
                                 <p className="text-xs text-zinc-500">{selectedOrder.customer.email}</p>
                             </div>
 
+                            {/* Current status */}
                             <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] px-4 py-3">
                                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold mb-2">Status</p>
                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
@@ -458,6 +461,7 @@ export function OrdersTable({ compact }: Props) {
                                 </span>
                             </div>
 
+                            {/* Items */}
                             <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] overflow-hidden">
                                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold px-4 pt-3 pb-2">
                                     Items Ordered
@@ -487,6 +491,7 @@ export function OrdersTable({ compact }: Props) {
                             </div>
                         </div>
 
+                        {/* Action footer */}
                         <div className="px-4 pt-3 pb-5 border-t border-white/[0.06] bg-white/[0.015] shrink-0 space-y-2">
                             {updatingId === selectedOrder._id ? (
                                 <div className="flex items-center justify-center py-3 gap-2 text-zinc-400">

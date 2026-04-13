@@ -38,7 +38,7 @@ const MANAGE_NAV = [
 // ];
 
 const BOTTOM_NAV = [
-    { label: "Settings", href: "/dashboard?tab=settings", icon: Settings, tabKey: "settings" },
+    { label: "Settings", href: "/profile", icon: Settings, tabKey: "settings" },
     // { label: "Notifications", href: "/dashboard?tab=notifications", icon: Bell, badge: "3", tabKey: "notifications" },
     { label: "Get Help", href: "/dashboard?tab=help", icon: HelpCircle, tabKey: "help" },
     // { label: "Search", href: "/dashboard?tab=search", icon: Search, tabKey: "search" },

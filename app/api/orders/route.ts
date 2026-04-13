@@ -8,7 +8,7 @@ import type { Session } from "next-auth"
 
 // Typed session user — matches your User model + next-auth.d.ts
 interface SessionUser {
-    id: string
+    _id: string
     email: string
     name?: string
     username?: string
@@ -62,7 +62,8 @@ export async function GET(req: Request) {
 // ─── POST /api/orders  (authenticated users) ─────────────────────────────────
 export async function POST(req: Request) {
     try {
-        const session = await getServerSession(authOptions)
+        const session = await getServerSession(authOptions);
+        console.log("[POST /api/orders] session.user =", JSON.stringify(session?.user));
         const user = session?.user as SessionUser | undefined
 
         if (!user) {
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
         await dbConnect()
 
         // Always re-check ban status from DB — never trust the token alone for writes
-        const freshUser = await UserModel.findById(user.id).select("isBanned").lean()
+        const freshUser = await UserModel.findById(user._id).select("isBanned").lean()
         if (!freshUser) {
             return NextResponse.json({ error: "User not found" }, { status: 404 })
         }
@@ -111,7 +112,7 @@ export async function POST(req: Request) {
                 // username is your app's primary display name; fall back to name from OAuth
                 name: user.username ?? user.name ?? "Guest",
                 email: user.email,
-                userId: user.id,
+                userId: user._id,
             },
             status: "pending",
         })
