@@ -323,11 +323,9 @@ export default function Navbar() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
 
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 shadow-lg shadow-amber-900/40 group-hover:bg-amber-400 transition-all duration-200">
-              <UtensilsCrossed className="h-4 w-4 text-zinc-950" />
-            </div>
-            <span className="text-lg font-bold text-white tracking-tight">
-              Chai<span className="text-amber-500">Dham</span>
+
+            <span className="text-xl font-bold text-white tracking-tight">
+              <span className="text-amber-500">Chai</span>Dham
             </span>
           </Link>
 

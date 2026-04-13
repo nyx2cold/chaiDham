@@ -34,7 +34,7 @@ export async function GET() {
         const emails = orderStats.map((s) => s._id);
         const users = await UserModel.find(
             { email: { $in: emails } },
-            { email: 1, browniePoints: 1, createdAt: 1 }
+            { email: 1, browniePoints: 1, createdAt: 1, isBanned: 1 }
         ).lean();
 
         const userMap = new Map(users.map((u) => [u.email, u]));

@@ -15,18 +15,18 @@ export interface IMenuItem extends Document {
 
 const MenuItemSchema = new Schema<IMenuItem>(
   {
-    name:        { type: String, required: true, trim: true },
+    name: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
-    price:       { type: Number, required: true, min: 0 },
-    category:    {
+    price: { type: Number, required: true, min: 0 },
+    category: {
       type: String,
       required: true,
-      enum: ["chai", "snacks", "maggi", "cold-drinks", "specials"],
+      // enum: ["chai", "snacks", "maggi", "cold-drinks", "specials"],
     },
-    image:        { type: String, default: "" },
-    isVeg:        { type: Boolean, default: true },
+    image: { type: String, default: "" },
+    isVeg: { type: Boolean, default: true },
     isBestseller: { type: Boolean, default: false },
-    isAvailable:  { type: Boolean, default: true },
+    isAvailable: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

@@ -1,4 +1,3 @@
-// This page is used to delete and update the menu items
 // app/api/menu/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -6,10 +5,10 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbconnect";
 import MenuItem from "@/model/MenuItem";
 
-// ── DELETE /api/menu/[id] — admin only ───────────────────────────────────────
+// ── DELETE /api/menu/[id] ────────────────────────────────────────────────────
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,23 +17,24 @@ export async function DELETE(
     }
 
     await dbConnect();
-    const deleted = await MenuItem.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const deleted = await MenuItem.findByIdAndDelete(id);
 
     if (!deleted) {
       return NextResponse.json({ success: false, message: "Item not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, message: "Item deleted" }, { status: 200 });
+    return NextResponse.json({ success: true, message: "Item deleted" });
   } catch (error) {
     console.error("[DELETE /api/menu/:id]", error);
     return NextResponse.json({ success: false, message: "Failed to delete item" }, { status: 500 });
   }
 }
 
-// ── PATCH /api/menu/[id] — admin only, update any fields ────────────────────
+// ── PATCH /api/menu/[id] ─────────────────────────────────────────────────────
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -43,10 +43,11 @@ export async function PATCH(
     }
 
     await dbConnect();
+    const { id } = await params;
     const body = await req.json();
 
     const updated = await MenuItem.findByIdAndUpdate(
-      params.id,
+      id,
       { $set: body },
       { new: true, runValidators: true }
     );
@@ -55,7 +56,7 @@ export async function PATCH(
       return NextResponse.json({ success: false, message: "Item not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: updated }, { status: 200 });
+    return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error("[PATCH /api/menu/:id]", error);
     return NextResponse.json({ success: false, message: "Failed to update item" }, { status: 500 });

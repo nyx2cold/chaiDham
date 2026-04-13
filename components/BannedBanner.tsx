@@ -6,21 +6,13 @@ import { Ban } from "lucide-react";
 
 export function BannedBanner() {
     const { data: session } = useSession();
-    const [isBanned, setIsBanned] = useState(false);
-
-    useEffect(() => {
-        if (!session) return;
-        fetch("/api/user/profile")
-            .then((r) => r.json())
-            .then((d) => {
-                if (d.success && d.user?.isBanned) setIsBanned(true);
-            });
-    }, [session]);
+    const isBanned = (session?.user as any)?.isBanned;
 
     if (!isBanned) return null;
 
+
     return (
-        <div className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 px-4 py-3"
+        <div className="sticky top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 px-4 py-3"
             style={{
                 background: "linear-gradient(90deg,rgba(239,68,68,0.95),rgba(185,28,28,0.95))",
                 backdropFilter: "blur(12px)",

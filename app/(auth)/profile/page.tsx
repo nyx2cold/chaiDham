@@ -5,6 +5,9 @@ import { useSession, signOut } from "next-auth/react";
 import {
     CheckCircle2, Clock, ChefHat, XCircle,
     User, ShoppingBag, LogOut, Trophy, Flame,
+    Coffee, Star, Crown, Award, TrendingUp,
+    Package, CreditCard, ChevronRight, Cookie,
+    Sparkles, CircleCheck, CircleX,
 } from "lucide-react";
 import type React from "react";
 
@@ -23,25 +26,26 @@ interface DBUser {
     userName: string; email: string; phone: string; createdAt: string; browniePoints: number;
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Tiers ─────────────────────────────────────────────────────────────────────
 const TIERS = [
-    { name: "Chai Lover", min: 0, max: 200, emoji: "🍵", perks: "Welcome to ChaiDham!" },
-    { name: "Chai Addict", min: 200, max: 500, emoji: "☕", perks: "Priority order processing" },
-    { name: "Chai Master", min: 500, max: Infinity, emoji: "👑", perks: "Exclusive member discounts" },
+    { name: "Chai Lover", min: 0, max: 100, icon: Coffee, color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20", perks: "Welcome to ChaiDham!" },
+    { name: "Chai Addict", min: 100, max: 500, icon: Award, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", perks: "Priority order processing" },
+    { name: "Chai Master", min: 500, max: Infinity, icon: Crown, color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/20", perks: "Exclusive member discounts" },
 ];
 
+// ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_STEPS = [
-    { key: "pending", label: "Order Received", icon: "🧾", desc: "We got your order" },
-    { key: "preparing", label: "Being Prepared", icon: "👨‍🍳", desc: "Kitchen is on it" },
-    { key: "ready", label: "Ready for Pickup", icon: "✅", desc: "Come grab it!" },
+    { key: "pending", label: "Order Received", Icon: Package, desc: "We got your order" },
+    { key: "preparing", label: "Being Prepared", Icon: ChefHat, desc: "Kitchen is on it" },
+    { key: "ready", label: "Ready for Pickup", Icon: CheckCircle2, desc: "Come grab it!" },
 ];
 
-const STATUS_META: Record<OrderStatus, { bg: string; text: string; border: string; label: string; icon: React.ReactNode }> = {
-    pending: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/25", label: "Pending", icon: <Clock size={11} /> },
-    preparing: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/25", label: "Preparing", icon: <ChefHat size={11} /> },
-    ready: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/25", label: "Ready!", icon: <CheckCircle2 size={11} /> },
-    completed: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", label: "Completed", icon: <CheckCircle2 size={11} /> },
-    cancelled: { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/25", label: "Cancelled", icon: <XCircle size={11} /> },
+const STATUS_META: Record<OrderStatus, { bg: string; text: string; border: string; label: string; Icon: React.FC<any> }> = {
+    pending: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/25", label: "Pending", Icon: Clock },
+    preparing: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/25", label: "Preparing", Icon: ChefHat },
+    ready: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/25", label: "Ready!", Icon: CheckCircle2 },
+    completed: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", label: "Completed", Icon: CircleCheck },
+    cancelled: { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/25", label: "Cancelled", Icon: CircleX },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -71,14 +75,15 @@ function LiveOrderTracker({ order }: { order: Order }) {
     const stepIndex = STATUS_STEPS.findIndex((s) => s.key === order.status);
     const isDone = order.status === "completed" || order.status === "cancelled";
     const s = STATUS_META[order.status];
+    const SIcon = s.Icon;
 
     return (
         <div className={`relative rounded-2xl overflow-hidden border transition-all duration-300
-      ${isDone
+            ${isDone
                 ? "bg-white/[0.03] border-white/[0.07]"
                 : "bg-gradient-to-br from-amber-500/[0.07] via-white/[0.03] to-transparent border-amber-500/20"
             }
-      shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]`}>
+            shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]`}>
 
             {!isDone && <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-16 rounded-full bg-amber-500/10 blur-2xl" />}
 
@@ -86,10 +91,10 @@ function LiveOrderTracker({ order }: { order: Order }) {
                 <div className="flex items-center gap-2.5">
                     <span className="font-mono text-[13px] font-black text-amber-400">#{order.orderNumber}</span>
                     <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.bg} ${s.text} ${s.border}`}>
-                        {s.icon}{s.label}
+                        <SIcon size={10} />{s.label}
                     </span>
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border
-            ${order.type === "dine-in" ? "bg-sky-500/10 text-sky-400 border-sky-500/20" : "bg-violet-500/10 text-violet-400 border-violet-500/20"}`}>
+                        ${order.type === "dine-in" ? "bg-sky-500/10 text-sky-400 border-sky-500/20" : "bg-violet-500/10 text-violet-400 border-violet-500/20"}`}>
                         {order.type === "dine-in" ? "Dine In" : "Takeaway"}
                     </span>
                 </div>
@@ -105,11 +110,12 @@ function LiveOrderTracker({ order }: { order: Order }) {
                     {STATUS_STEPS.map((step, i) => {
                         const isDoneStep = i < stepIndex;
                         const isActiveStep = i === stepIndex;
+                        const StepIcon = step.Icon;
                         return (
                             <div key={step.key}>
                                 <div className={`flex items-center gap-3 px-3 py-2 rounded-xl border transition-all duration-300
-                  ${isActiveStep ? "bg-amber-500/10 border-amber-500/20" : isDoneStep ? "bg-emerald-500/[0.06] border-emerald-500/15" : "border-transparent opacity-25"}`}>
-                                    <span className="text-base leading-none">{step.icon}</span>
+                                    ${isActiveStep ? "bg-amber-500/10 border-amber-500/20" : isDoneStep ? "bg-emerald-500/[0.06] border-emerald-500/15" : "border-transparent opacity-25"}`}>
+                                    <StepIcon className={`h-4 w-4 shrink-0 ${isActiveStep ? "text-amber-400" : isDoneStep ? "text-emerald-400" : "text-zinc-600"}`} />
                                     <div className="flex-1 min-w-0">
                                         <p className={`text-[11px] font-bold ${isActiveStep ? "text-amber-300" : isDoneStep ? "text-emerald-400" : "text-zinc-600"}`}>{step.label}</p>
                                         <p className="text-[10px] text-zinc-600">{step.desc}</p>
@@ -124,8 +130,11 @@ function LiveOrderTracker({ order }: { order: Order }) {
                 </div>
             ) : (
                 <div className={`mx-4 my-3 flex items-center gap-3 px-3 py-2.5 rounded-xl border
-          ${order.status === "completed" ? "bg-emerald-500/[0.07] border-emerald-500/15" : "bg-red-500/[0.07] border-red-500/15"}`}>
-                    <span className="text-lg">{order.status === "completed" ? "✅" : "❌"}</span>
+                    ${order.status === "completed" ? "bg-emerald-500/[0.07] border-emerald-500/15" : "bg-red-500/[0.07] border-red-500/15"}`}>
+                    {order.status === "completed"
+                        ? <CircleCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                        : <CircleX className="h-5 w-5 text-red-400 shrink-0" />
+                    }
                     <div>
                         <p className={`text-xs font-bold ${order.status === "completed" ? "text-emerald-400" : "text-red-400"}`}>
                             {order.status === "completed" ? "Order completed" : "Order cancelled"}
@@ -140,8 +149,7 @@ function LiveOrderTracker({ order }: { order: Order }) {
     );
 }
 
-// ── Shared Account Form ───────────────────────────────────────────────────────
-// Extracted so both admin and regular user views can reuse it.
+// ── Account Form ──────────────────────────────────────────────────────────────
 function AccountForm({
     userName, setUserName, email, setEmail, phone, setPhone,
     showPass, setShowPass, currentPassword, setCurrentPassword,
@@ -184,12 +192,12 @@ function AccountForm({
                 </div>
             </div>
 
-            {/* Password */}
             <div className="pt-1 border-t border-white/[0.06]">
                 <button
                     onClick={() => { setShowPass(!showPass); setCurrentPassword(""); setNewPassword(""); }}
-                    className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors duration-150 active:scale-[0.98]">
-                    {showPass ? "✕ Cancel password change" : "🔒 Change password"}
+                    className="flex items-center gap-2 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors duration-150">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    {showPass ? "Cancel password change" : "Change password"}
                 </button>
                 {showPass && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
@@ -207,7 +215,7 @@ function AccountForm({
 
             {saveMsg && (
                 <div className={`px-4 py-3 rounded-xl text-xs font-semibold border
-          ${saveMsg.type === "success" ? "bg-emerald-500/[0.08] border-emerald-500/20 text-emerald-400" : "bg-red-500/[0.08] border-red-500/20 text-red-400"}`}>
+                    ${saveMsg.type === "success" ? "bg-emerald-500/[0.08] border-emerald-500/20 text-emerald-400" : "bg-red-500/[0.08] border-red-500/20 text-red-400"}`}>
                     {saveMsg.text}
                 </div>
             )}
@@ -224,13 +232,6 @@ function AccountForm({
 export default function ProfilePage() {
     const { data: session } = useSession();
     const sessionUser = session?.user as any;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ADMIN CHECK — adjust the condition to match how your session stores role.
-    //   Common alternatives:
-    //     sessionUser?.isAdmin === true
-    //     sessionUser?.role === "admin"
-    // ─────────────────────────────────────────────────────────────────────────
     const isAdmin: boolean = sessionUser?.role === "admin";
 
     const [activeTab, setActiveTab] = useState<"orders" | "account">("orders");
@@ -249,11 +250,9 @@ export default function ProfilePage() {
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
 
-    // ── Initial load ──────────────────────────────────────────────────────────
     useEffect(() => {
         async function load() {
             try {
-                // Admins don't need order data — skip that fetch entirely
                 const profileRes = await fetch("/api/user/profile");
                 const profileData = await profileRes.json();
                 if (profileData.success) {
@@ -262,21 +261,16 @@ export default function ProfilePage() {
                     setEmail(profileData.user.email ?? "");
                     setPhone(profileData.user.phone ?? "");
                 }
-
                 if (!isAdmin) {
                     const ordersRes = await fetch("/api/orders/my");
                     const ordersData = await ordersRes.json();
-                    if (ordersData.success) {
-                        setOrders(ordersData.orders);
-                        setStats(ordersData.stats);
-                    }
+                    if (ordersData.success) { setOrders(ordersData.orders); setStats(ordersData.stats); }
                 }
             } catch { } finally { setLoading(false); }
         }
         if (session) load();
     }, [session, isAdmin]);
 
-    // ── Poll every 5s — regular users only ───────────────────────────────────
     useEffect(() => {
         if (isAdmin) return;
         const id = setInterval(async () => {
@@ -289,7 +283,6 @@ export default function ProfilePage() {
         return () => clearInterval(id);
     }, [isAdmin]);
 
-    // ── Save profile ──────────────────────────────────────────────────────────
     async function handleSave() {
         setSaving(true); setSaveMsg(null);
         try {
@@ -308,28 +301,24 @@ export default function ProfilePage() {
         } finally { setSaving(false); }
     }
 
-    // ── Derived ───────────────────────────────────────────────────────────────
     const tier = getTier(stats.browniePoints);
+    const TierIcon = tier.icon;
     const progress = getTierProgress(stats.browniePoints);
     const nextTier = TIERS.find((t) => t.min > tier.min);
     const displayName = dbUser?.userName ?? sessionUser?.username ?? sessionUser?.name ?? "…";
     const memberSince = dbUser?.createdAt
         ? new Date(dbUser.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
         : "—";
-
     const liveOrders = orders.filter((o) => o.status !== "completed" && o.status !== "cancelled");
     const historyOrders = orders.filter((o) => o.status === "completed" || o.status === "cancelled");
 
-    // Shared form props
     const formProps = {
         userName, setUserName, email, setEmail, phone, setPhone,
         showPass, setShowPass, currentPassword, setCurrentPassword,
         newPassword, setNewPassword, saving, saveMsg, handleSave, memberSince,
     };
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // ADMIN VIEW — only show the account edit panel, nothing else
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Admin view ────────────────────────────────────────────────────────────
     if (isAdmin) {
         return (
             <div className="min-h-screen bg-zinc-950 text-white">
@@ -337,71 +326,47 @@ export default function ProfilePage() {
                     <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-amber-500/[0.04] blur-[100px]" />
                     <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] rounded-full bg-amber-600/[0.03] blur-[80px]" />
                 </div>
-
                 <div className="relative mx-auto max-w-xl px-4 py-8 pb-16">
-
-                    {/* Breadcrumb */}
                     <div className="flex items-center gap-2 mb-6">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]" />
-                        <span className="text-[11px] text-zinc-600 uppercase tracking-[0.18em] font-semibold">
-                            ChaiDham / Admin / Profile
-                        </span>
+                        <span className="text-[11px] text-zinc-600 uppercase tracking-[0.18em] font-semibold">ChaiDham / Admin / Profile</span>
                     </div>
-
-                    {/* Compact hero */}
-                    <div className="relative rounded-2xl overflow-hidden mb-4
-            bg-white/[0.04] backdrop-blur-xl border border-white/[0.08]
-            shadow-[0_8px_40px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    <div className="relative rounded-2xl overflow-hidden mb-4 bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]">
                         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
                         <div className="relative flex items-center gap-4 p-5">
-                            {/* Avatar */}
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600
-                flex items-center justify-center text-lg font-black text-zinc-950
-                shadow-[0_0_0_3px_rgba(245,158,11,0.2),0_0_20px_rgba(245,158,11,0.15)] shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-lg font-black text-zinc-950 shadow-[0_0_0_3px_rgba(245,158,11,0.2),0_0_20px_rgba(245,158,11,0.15)] shrink-0">
                                 {getInitials(displayName)}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                     <h1 className="text-base font-black text-white truncate">{displayName}</h1>
-                                    {/* Admin badge */}
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-500/10 text-red-400 border border-red-500/25 uppercase tracking-wider shrink-0">
-                                        ⚙️ Admin
+                                        <Sparkles className="h-2.5 w-2.5" /> Admin
                                     </span>
                                 </div>
                                 <p className="text-xs text-zinc-500 truncate">{dbUser?.email ?? sessionUser?.email ?? "—"}</p>
                             </div>
-                            <button
-                                onClick={() => signOut({ callbackUrl: "/sign-in" })}
-                                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold
-                  bg-red-500/[0.07] text-red-400 border border-red-500/15
-                  hover:bg-red-500/15 hover:border-red-500/25 active:scale-95 transition-all duration-150">
+                            <button onClick={() => signOut({ callbackUrl: "/sign-in" })}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-500/[0.07] text-red-400 border border-red-500/15 hover:bg-red-500/15 hover:border-red-500/25 active:scale-95 transition-all duration-150">
                                 <LogOut className="h-3.5 w-3.5" /> Sign out
                             </button>
                         </div>
                     </div>
-
-                    {/* Account edit card — the only content for admins */}
-                    <div className="rounded-2xl overflow-hidden
-            bg-white/[0.04] backdrop-blur-xl border border-white/[0.08]
-            shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]">
+                    <div className="rounded-2xl overflow-hidden bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]">
                         <div className="px-5 py-4 border-b border-white/[0.06]">
                             <p className="text-sm font-bold text-white">Edit Profile</p>
                             <p className="text-[11px] text-zinc-600 mt-0.5">Update your account details</p>
                         </div>
                         <AccountForm {...formProps} />
                     </div>
-
                 </div>
             </div>
         );
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // REGULAR USER VIEW — full profile page (unchanged)
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── User view ─────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-zinc-950 text-white">
-
             <div className="pointer-events-none fixed inset-0 overflow-hidden">
                 <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-amber-500/[0.04] blur-[100px]" />
                 <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] rounded-full bg-amber-600/[0.03] blur-[80px]" />
@@ -415,7 +380,7 @@ export default function ProfilePage() {
                     <span className="text-[11px] text-zinc-600 uppercase tracking-[0.18em] font-semibold">ChaiDham / Profile</span>
                 </div>
 
-                {/* Hero card */}
+                {/* Hero */}
                 <div className="relative rounded-2xl overflow-hidden mb-3 bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]">
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
                     <div className="pointer-events-none absolute -top-10 left-10 w-48 h-24 bg-amber-500/[0.06] blur-3xl rounded-full" />
@@ -429,8 +394,8 @@ export default function ProfilePage() {
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                                 <h1 className="text-xl font-black text-white truncate">{displayName}</h1>
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/12 text-amber-400 border border-amber-500/25">
-                                    {tier.emoji} {tier.name}
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${tier.bg} ${tier.border} ${tier.color}`}>
+                                    <TierIcon className="h-3 w-3" /> {tier.name}
                                 </span>
                                 {liveOrders.length > 0 && (
                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -452,45 +417,55 @@ export default function ProfilePage() {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-2.5 mb-3">
                     {[
-                        { label: "Orders", value: loading ? "…" : String(stats.totalOrders), icon: <ShoppingBag className="h-4 w-4" /> },
-                        { label: "Spent", value: loading ? "…" : `₹${stats.totalSpent.toLocaleString("en-IN")}`, icon: <Trophy className="h-4 w-4" /> },
-                        { label: "Favourite", value: loading ? "…" : (stats.favoriteItem ?? "—"), icon: <Flame className="h-4 w-4" /> },
+                        { label: "Orders", value: loading ? "…" : String(stats.totalOrders), Icon: ShoppingBag },
+                        { label: "Spent", value: loading ? "…" : `₹${stats.totalSpent.toLocaleString("en-IN")}`, Icon: Trophy },
+                        { label: "Favourite", value: loading ? "…" : (stats.favoriteItem ?? "—"), Icon: Flame },
                     ].map((s) => (
                         <div key={s.label} className="group relative rounded-2xl px-4 py-3.5 overflow-hidden bg-white/[0.04] backdrop-blur-xl border border-white/[0.07] hover:border-amber-500/20 hover:bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200">
                             <div className="pointer-events-none absolute -top-4 -right-4 w-16 h-16 rounded-full bg-amber-500/[0.05] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            <div className="flex items-center gap-2 mb-2 text-zinc-600 group-hover:text-amber-500/60 transition-colors duration-200">{s.icon}</div>
+                            <s.Icon className="h-4 w-4 text-zinc-600 group-hover:text-amber-500/60 transition-colors duration-200 mb-2" />
                             <p className="text-lg font-black text-amber-400 truncate leading-none mb-1">{s.value}</p>
                             <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{s.label}</p>
                         </div>
                     ))}
                 </div>
 
-                {/* Brownie Points card */}
+                {/* Brownie Points */}
                 <div className="relative rounded-2xl overflow-hidden mb-3 bg-white/[0.04] backdrop-blur-xl border border-amber-500/[0.12] shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.07)]">
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent pointer-events-none" />
                     <div className="pointer-events-none absolute -top-8 right-10 w-40 h-20 bg-amber-500/[0.07] blur-3xl rounded-full" />
                     <div className="relative p-5">
                         <div className="flex items-start justify-between gap-4 mb-4">
                             <div>
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.15em] mb-2">🍪 Brownie Points</p>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Cookie className="h-4 w-4 text-amber-500/70" />
+                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.15em]">Brownie Points</p>
+                                </div>
                                 <div className="flex items-baseline gap-1.5">
                                     <span className="text-5xl font-black text-amber-400 leading-none [text-shadow:0_0_30px_rgba(245,158,11,0.35)]">
                                         {loading ? "…" : stats.browniePoints}
                                     </span>
                                     <span className="text-sm font-semibold text-zinc-500">pts</span>
                                 </div>
-                                <p className="text-[11px] text-zinc-600 mt-1.5">Earn 13 pts per ₹200 · 1 pt = ₹1 discount</p>
+                                <p className="text-[11px] text-zinc-600 mt-1.5">Earn 13 pt per ₹200 · 1 pt = ₹1 discount</p>
                             </div>
                             <div className="text-right shrink-0">
-                                <span className="text-3xl">{tier.emoji}</span>
-                                <p className="text-sm font-bold text-amber-400 mt-1">{tier.name}</p>
+                                <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl border mb-1 ${tier.bg} ${tier.border}`}>
+                                    <TierIcon className={`h-5 w-5 ${tier.color}`} />
+                                </div>
+                                <p className={`text-sm font-bold ${tier.color}`}>{tier.name}</p>
                                 <p className="text-[11px] text-zinc-600">{tier.perks}</p>
                             </div>
                         </div>
+
+                        {/* Progress bar */}
                         <div className="mb-4">
                             <div className="flex justify-between text-[11px] mb-1.5">
-                                <span className="text-zinc-600">
-                                    {nextTier ? `${stats.browniePoints} / ${nextTier.min} pts → ${nextTier.emoji} ${nextTier.name}` : "Maximum tier reached 👑"}
+                                <span className="text-zinc-600 flex items-center gap-1">
+                                    {nextTier
+                                        ? <>{stats.browniePoints} / {nextTier.min} pts <ChevronRight className="h-3 w-3" /> {nextTier.name}</>
+                                        : <><Crown className="h-3 w-3 text-yellow-400" /> Maximum tier reached</>
+                                    }
                                 </span>
                                 <span className="text-amber-400 font-bold">{progress}%</span>
                             </div>
@@ -499,13 +474,16 @@ export default function ProfilePage() {
                                     style={{ width: `${progress}%` }} />
                             </div>
                         </div>
+
+                        {/* Tier cards */}
                         <div className="grid grid-cols-3 gap-2">
                             {TIERS.map((t) => {
                                 const unlocked = stats.browniePoints >= t.min;
+                                const TIcon = t.icon;
                                 return (
-                                    <div key={t.name} className={`rounded-xl px-3 py-2.5 border transition-all duration-200 ${unlocked ? "bg-amber-500/[0.07] border-amber-500/20" : "bg-white/[0.02] border-white/[0.05] opacity-40"}`}>
-                                        <p className="text-xl mb-1">{t.emoji}</p>
-                                        <p className={`text-[11px] font-bold ${unlocked ? "text-amber-400" : "text-zinc-600"}`}>{t.name}</p>
+                                    <div key={t.name} className={`rounded-xl px-3 py-2.5 border transition-all duration-200 ${unlocked ? `${t.bg} ${t.border}` : "bg-white/[0.02] border-white/[0.05] opacity-40"}`}>
+                                        <TIcon className={`h-5 w-5 mb-1.5 ${unlocked ? t.color : "text-zinc-600"}`} />
+                                        <p className={`text-[11px] font-bold ${unlocked ? t.color : "text-zinc-600"}`}>{t.name}</p>
                                         <p className="text-[10px] text-zinc-700 mt-0.5">{t.min}+ pts</p>
                                     </div>
                                 );
@@ -519,7 +497,7 @@ export default function ProfilePage() {
                     {(["orders", "account"] as const).map((tab) => (
                         <button key={tab} onClick={() => setActiveTab(tab)}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98]
-                ${activeTab === tab ? "bg-amber-500 text-zinc-950 shadow-[0_2px_12px_rgba(245,158,11,0.35)]" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"}`}>
+                                ${activeTab === tab ? "bg-amber-500 text-zinc-950 shadow-[0_2px_12px_rgba(245,158,11,0.35)]" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"}`}>
                             {tab === "orders" ? <ShoppingBag className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
                             {tab}
                         </button>
@@ -536,12 +514,13 @@ export default function ProfilePage() {
                                 return (
                                     <button key={t} onClick={() => setOrdersTab(t)}
                                         className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98]
-                      ${isActive ? (t === "live" && liveOrders.length > 0 ? "bg-amber-500/15 text-amber-400 border border-amber-500/25" : "bg-white/[0.07] text-white border border-white/[0.10]") : "text-zinc-600 hover:text-zinc-400 hover:bg-white/[0.03]"}`}>
+                                            ${isActive ? (t === "live" && liveOrders.length > 0 ? "bg-amber-500/15 text-amber-400 border border-amber-500/25" : "bg-white/[0.07] text-white border border-white/[0.10]") : "text-zinc-600 hover:text-zinc-400 hover:bg-white/[0.03]"}`}>
                                         {t === "live" && liveOrders.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                                        {t === "live" ? <TrendingUp className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                                         {t}
                                         {count > 0 && (
                                             <span className={`flex items-center justify-center h-4 w-4 rounded-full text-[9px] font-black
-                        ${isActive ? (t === "live" && liveOrders.length > 0 ? "bg-amber-500/20 text-amber-400" : "bg-white/15 text-white") : "bg-white/[0.06] text-zinc-500"}`}>
+                                                ${isActive ? (t === "live" && liveOrders.length > 0 ? "bg-amber-500/20 text-amber-400" : "bg-white/15 text-white") : "bg-white/[0.06] text-zinc-500"}`}>
                                                 {count}
                                             </span>
                                         )}
@@ -555,7 +534,7 @@ export default function ProfilePage() {
                                 <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-10 text-center text-sm text-zinc-600">Loading orders…</div>
                             ) : liveOrders.length === 0 ? (
                                 <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-12 text-center">
-                                    <p className="text-3xl mb-2">🍵</p>
+                                    <Coffee className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
                                     <p className="text-sm font-medium text-zinc-500">No active orders</p>
                                     <p className="text-xs text-zinc-700 mt-1">Place an order from the menu to track it here</p>
                                 </div>
@@ -575,7 +554,10 @@ export default function ProfilePage() {
                                 {loading ? (
                                     <div className="p-10 text-center text-sm text-zinc-600">Loading…</div>
                                 ) : historyOrders.length === 0 ? (
-                                    <div className="p-12 text-center"><p className="text-3xl mb-2">📋</p><p className="text-sm text-zinc-500">No completed orders yet</p></div>
+                                    <div className="p-12 text-center">
+                                        <Package className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
+                                        <p className="text-sm text-zinc-500">No completed orders yet</p>
+                                    </div>
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-xs" style={{ minWidth: 520 }}>
@@ -589,6 +571,7 @@ export default function ProfilePage() {
                                             <tbody>
                                                 {historyOrders.map((order, i) => {
                                                     const s = STATUS_META[order.status];
+                                                    const SIcon = s.Icon;
                                                     return (
                                                         <tr key={order._id} className={`border-b border-white/[0.03] transition-colors hover:bg-white/[0.025] ${i % 2 !== 0 ? "bg-white/[0.015]" : ""}`}>
                                                             <td className="px-4 py-3 font-mono font-black text-amber-400 whitespace-nowrap">#{order.orderNumber}</td>
@@ -602,7 +585,7 @@ export default function ProfilePage() {
                                                             </td>
                                                             <td className="px-4 py-3 whitespace-nowrap">
                                                                 <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.bg} ${s.text} ${s.border}`}>
-                                                                    {s.icon}{s.label}
+                                                                    <SIcon className="h-2.5 w-2.5" />{s.label}
                                                                 </span>
                                                             </td>
                                                             <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">{formatDate(order.createdAt)}</td>
@@ -629,7 +612,6 @@ export default function ProfilePage() {
                         <AccountForm {...formProps} />
                     </div>
                 )}
-
             </div>
         </div>
     );

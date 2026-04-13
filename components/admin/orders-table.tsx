@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
     Clock, CheckCircle2, ChefHat, XCircle, Search, Sparkles,
-    X, UtensilsCrossed, Loader2, RefreshCw,
+    X, UtensilsCrossed, Loader2, RefreshCw, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 export type OrderStatus = "pending" | "preparing" | "ready" | "completed" | "cancelled";
@@ -65,6 +65,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
 };
 
 const STATUS_ORDER: OrderStatus[] = ["pending", "preparing", "ready", "completed", "cancelled"];
+const PAGE_SIZE_OPTIONS = [10, 15, 20, 50];
 
 function formatTime(iso: string) {
     return new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
@@ -81,6 +82,8 @@ export function OrdersTable({ compact }: Props) {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
+    const [pageSize, setPageSize] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const fetchOrders = useCallback(async (isBackground = false) => {
         try {
@@ -89,7 +92,6 @@ export function OrdersTable({ compact }: Props) {
             const data = await res.json();
             if (data.success) {
                 setOrders((prev) => {
-                    // Highlight truly new orders
                     const prevIds = new Set(prev.map((o) => o._id));
                     const incoming: Order[] = data.orders;
                     const brandNew = incoming
@@ -97,7 +99,6 @@ export function OrdersTable({ compact }: Props) {
                         .map((o) => o._id);
                     if (brandNew.length > 0) {
                         setNewOrderIds((s) => new Set([...s, ...brandNew]));
-                        // Clear highlight after 6s
                         setTimeout(() => {
                             setNewOrderIds((s) => {
                                 const next = new Set(s);
@@ -116,12 +117,14 @@ export function OrdersTable({ compact }: Props) {
         }
     }, []);
 
-    // Initial fetch + 5s polling
     useEffect(() => {
         fetchOrders();
         const id = setInterval(() => fetchOrders(true), 5000);
         return () => clearInterval(id);
     }, [fetchOrders]);
+
+    // Reset to page 1 when filters/page size change
+    useEffect(() => { setCurrentPage(1); }, [search, statusFilter, pageSize]);
 
     async function updateStatus(orderId: string, status: OrderStatus) {
         setUpdatingId(orderId);
@@ -136,7 +139,6 @@ export function OrdersTable({ compact }: Props) {
                 setOrders((prev) =>
                     prev.map((o) => (o._id === orderId ? { ...o, status } : o))
                 );
-                // Update drawer if open for this order
                 if (selectedOrder?._id === orderId) {
                     setSelectedOrder((o) => o ? { ...o, status } : o);
                 }
@@ -161,7 +163,12 @@ export function OrdersTable({ compact }: Props) {
         return matchSearch && matchStatus;
     });
 
-    const displayed = compact ? filtered.slice(0, 5) : filtered;
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    const paginated = compact
+        ? filtered.slice(0, 5)
+        : filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
     return (
         <>
@@ -189,7 +196,6 @@ export function OrdersTable({ compact }: Props) {
                                     <Sparkles className="h-2.5 w-2.5" />
                                     {filtered.length}
                                 </span>
-                                {/* Live pulse */}
                                 <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full
                                     bg-green-500/10 border border-green-500/20
                                     text-[10px] font-medium text-green-400">
@@ -203,7 +209,7 @@ export function OrdersTable({ compact }: Props) {
                         </div>
 
                         {!compact && (
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                 <button
                                     onClick={() => fetchOrders()}
                                     className="flex h-8 w-8 items-center justify-center rounded-xl
@@ -212,6 +218,7 @@ export function OrdersTable({ compact }: Props) {
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
                                 </button>
+
                                 <div className="relative flex-1 sm:w-52">
                                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
                                     <input
@@ -225,6 +232,27 @@ export function OrdersTable({ compact }: Props) {
                                             transition-all duration-200"
                                     />
                                 </div>
+
+                                {/* Page size selector */}
+                                <div className="flex items-center gap-1.5 px-2 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                                    <span className="text-[10px] text-zinc-500 font-semibold">Show</span>
+                                    <div className="flex gap-0.5">
+                                        {PAGE_SIZE_OPTIONS.map((size) => (
+                                            <button
+                                                key={size}
+                                                onClick={() => setPageSize(size)}
+                                                className={`px-2 h-6 rounded-lg text-[10px] font-bold transition-all duration-200
+                                                    ${pageSize === size
+                                                        ? "bg-amber-500 text-zinc-950 shadow-[0_2px_8px_rgba(245,158,11,0.35)]"
+                                                        : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06]"
+                                                    }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="flex gap-0.5 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                                     {(["all", ...STATUS_ORDER] as const).map((s) => (
                                         <button
@@ -265,7 +293,7 @@ export function OrdersTable({ compact }: Props) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {displayed.map((order, i) => {
+                                        {paginated.map((order, i) => {
                                             const sc = STATUS_CONFIG[order.status];
                                             const isNew = newOrderIds.has(order._id);
                                             const isUpdating = updatingId === order._id;
@@ -378,7 +406,7 @@ export function OrdersTable({ compact }: Props) {
                                 </table>
                             </div>
 
-                            {displayed.length === 0 && (
+                            {paginated.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
                                     <div className="h-12 w-12 rounded-2xl mb-3 bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
                                         <Search className="h-5 w-5 text-zinc-600" />
@@ -386,6 +414,63 @@ export function OrdersTable({ compact }: Props) {
                                     <p className="text-zinc-500 text-sm font-medium">No orders found</p>
                                     <p className="text-zinc-700 text-xs mt-1">Try adjusting your filters</p>
                                 </div>
+                            ) : (
+                                /* ── Pagination footer ── */
+                                !compact && totalPages > 1 && (
+                                    <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.05] bg-white/[0.01]">
+                                        <p className="text-[11px] text-zinc-500">
+                                            Showing <span className="text-zinc-300 font-semibold">{(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)}</span> of <span className="text-zinc-300 font-semibold">{filtered.length}</span> orders
+                                        </p>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                                disabled={safePage === 1}
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg
+                                                    bg-white/[0.05] border border-white/[0.08]
+                                                    text-zinc-400 hover:text-white hover:bg-white/[0.09]
+                                                    disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                            >
+                                                <ChevronLeft className="h-3.5 w-3.5" />
+                                            </button>
+
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                                                .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                                                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                                                    acc.push(p);
+                                                    return acc;
+                                                }, [])
+                                                .map((p, idx) =>
+                                                    p === "..." ? (
+                                                        <span key={`ellipsis-${idx}`} className="text-zinc-600 text-xs px-1">…</span>
+                                                    ) : (
+                                                        <button
+                                                            key={p}
+                                                            onClick={() => setCurrentPage(p as number)}
+                                                            className={`h-7 min-w-[28px] px-2 rounded-lg text-[11px] font-bold transition-all duration-200
+                                                                ${safePage === p
+                                                                    ? "bg-amber-500 text-zinc-950 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                                                                    : "bg-white/[0.04] border border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.09]"
+                                                                }`}
+                                                        >
+                                                            {p}
+                                                        </button>
+                                                    )
+                                                )}
+
+                                            <button
+                                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                                disabled={safePage === totalPages}
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg
+                                                    bg-white/[0.05] border border-white/[0.08]
+                                                    text-zinc-400 hover:text-white hover:bg-white/[0.09]
+                                                    disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                            >
+                                                <ChevronRight className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
                             )}
                         </>
                     )}
@@ -441,14 +526,12 @@ export function OrdersTable({ compact }: Props) {
                         {/* Scrollable body */}
                         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
 
-                            {/* Customer info */}
                             <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] px-4 py-3 space-y-1">
                                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold">Customer</p>
                                 <p className="text-sm font-semibold text-white">{selectedOrder.customer.name}</p>
                                 <p className="text-xs text-zinc-500">{selectedOrder.customer.email}</p>
                             </div>
 
-                            {/* Current status */}
                             <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] px-4 py-3">
                                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold mb-2">Status</p>
                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
@@ -461,7 +544,6 @@ export function OrdersTable({ compact }: Props) {
                                 </span>
                             </div>
 
-                            {/* Items */}
                             <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] overflow-hidden">
                                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold px-4 pt-3 pb-2">
                                     Items Ordered

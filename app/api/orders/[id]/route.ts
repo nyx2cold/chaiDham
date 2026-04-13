@@ -51,7 +51,7 @@ export async function PATCH(
                 status: "completed",
             });
             const totalSpent = allOrders.reduce((sum, o) => sum + o.total, 0);
-            const correctPoints = Math.floor(totalSpent / 10);
+            const correctPoints = Math.floor(totalSpent / 200) * 13;
 
             await UserModel.findOneAndUpdate(
                 { email: order.customer.email },

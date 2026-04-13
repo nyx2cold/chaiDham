@@ -64,43 +64,42 @@ export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);
         console.log("[POST /api/orders] session.user =", JSON.stringify(session?.user));
-        const user = session?.user as SessionUser | undefined
+        const user = session?.user as SessionUser | undefined;
 
         if (!user) {
-            return NextResponse.json({ error: "Please sign in to place an order" }, { status: 401 })
+            return NextResponse.json({ error: "Please sign in to place an order" }, { status: 401 });
         }
 
-        await dbConnect()
+        await dbConnect();
 
         // Always re-check ban status from DB — never trust the token alone for writes
-        const freshUser = await UserModel.findById(user._id).select("isBanned").lean()
+        const freshUser = await UserModel.findById(user._id).select("isBanned").lean();
         if (!freshUser) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 })
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
         if (freshUser.isBanned) {
             return NextResponse.json(
                 { error: "Your account has been suspended. You cannot place orders." },
                 { status: 403 }
-            )
+            );
         }
 
-        const body = await req.json() as Partial<OrderPostBody>
-        const { items, total, type } = body
+        const body = await req.json() as Partial<OrderPostBody>;
+        const { items, total, type } = body;
 
         if (!Array.isArray(items) || items.length === 0) {
-            return NextResponse.json({ error: "Order must have at least one item" }, { status: 400 })
+            return NextResponse.json({ error: "Order must have at least one item" }, { status: 400 });
         }
         if (typeof total !== "number" || total <= 0) {
-            return NextResponse.json({ error: "Invalid total" }, { status: 400 })
+            return NextResponse.json({ error: "Invalid total" }, { status: 400 });
         }
         if (!type || !["dine-in", "takeaway"].includes(type)) {
-            return NextResponse.json({ error: "Type must be dine-in or takeaway" }, { status: 400 })
+            return NextResponse.json({ error: "Type must be dine-in or takeaway" }, { status: 400 });
         }
 
-        // Validate each item has required fields
         for (const item of items) {
             if (!item.menuItemId || !item.name || typeof item.price !== "number" || item.quantity < 1) {
-                return NextResponse.json({ error: "Invalid item in order" }, { status: 400 })
+                return NextResponse.json({ error: "Invalid item in order" }, { status: 400 });
             }
         }
 
@@ -109,25 +108,19 @@ export async function POST(req: Request) {
             total,
             type,
             customer: {
-                // username is your app's primary display name; fall back to name from OAuth
                 name: user.username ?? user.name ?? "Guest",
                 email: user.email,
                 userId: user._id,
             },
             status: "pending",
-        })
-
-        // NOTE: Points are awarded only on completion (PATCH handler).
-        // Awarding on placement then again on completion causes double-counting.
-        // If you want "pending points" shown to users, store them separately as
-        // pendingPoints and only move them to browniePoints on completion.
+        });
 
         return NextResponse.json(
             { success: true, orderId: order._id.toString(), order },
             { status: 201 }
-        )
+        );
     } catch (err) {
-        console.error("[POST /api/orders]", err)
-        return NextResponse.json({ error: "Failed to place order" }, { status: 500 })
+        console.error("[POST /api/orders]", err);
+        return NextResponse.json({ error: "Failed to place order" }, { status: 500 });
     }
 }

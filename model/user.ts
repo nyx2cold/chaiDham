@@ -78,7 +78,10 @@ const UserSchema: Schema<User> = new Schema(
       type: Number,
       default: 0,
     },
-    isBanned: { type: Boolean, default: false },
+    isBanned: {
+      type: Boolean,
+      default: false
+    },
   },
   {
     timestamps: true, // adds createdAt and updatedAt automatically

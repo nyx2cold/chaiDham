@@ -6,10 +6,11 @@ import dbConnect from "@/lib/dbconnect";
 import MenuItem from "@/model/MenuItem";
 
 // ── GET /api/menu — public, returns all available items ──────────────────────
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     await dbConnect();
-    const items = await MenuItem.find({ isAvailable: true }).sort({ createdAt: -1 });
+    const showAll = new URL(req.url).searchParams.get("all") === "true";
+    const items = await MenuItem.find(showAll ? {} : { isAvailable: true }).sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: items }, { status: 200 });
   } catch (error) {
     console.error("[GET /api/menu]", error);

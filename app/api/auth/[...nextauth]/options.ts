@@ -4,7 +4,6 @@ import dbConnect from "@/lib/dbconnect";
 import UserModel from "@/model/user";
 import bcrypt from "bcryptjs";
 
-// authOptions is a function that gets called when next-auth is initialized and credentials provider is used to authenticate users
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -29,7 +28,7 @@ export const authOptions: NextAuthOptions = {
           const user = await UserModel.findOne({
             $or: [
               { email: credentials.identifier },
-              { userName: credentials.identifier }, 
+              { userName: credentials.identifier },
             ],
           });
 
@@ -51,7 +50,6 @@ export const authOptions: NextAuthOptions = {
           } else {
             throw new Error("Incorrect password");
           }
-
         } catch (err: any) {
           throw new Error(err.message || "Authentication failed");
         }
@@ -61,13 +59,32 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
+      // On first sign-in, populate token from user object
       if (user) {
         token._id = user._id?.toString();
         token.isVerified = user.isVerified;
-        token.isAcceptingOrders = user.isAcceptingOrders; 
+        token.isAcceptingOrders = user.isAcceptingOrders;
         token.username = (user as any).userName;
-        token.role = user.role;                           
+        token.role = user.role;
+        token.isBanned = (user as any).isBanned ?? false;
       }
+
+      // On every token refresh, re-fetch isBanned from DB
+      // so bans take effect immediately without requiring re-login
+      if (token._id) {
+        try {
+          await dbConnect();
+          const freshUser = await UserModel.findById(token._id)
+            .select("isBanned")
+            .lean() as any;
+          if (freshUser) {
+            token.isBanned = freshUser.isBanned ?? false;
+          }
+        } catch (err) {
+          console.error("[jwt callback] Failed to refresh isBanned:", err);
+        }
+      }
+
       return token;
     },
 
@@ -75,20 +92,19 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user._id = token._id;
         session.user.isVerified = token.isVerified;
-        session.user.isAcceptingOrders = token.isAcceptingOrders; 
+        session.user.isAcceptingOrders = token.isAcceptingOrders;
         session.user.username = token.username;
-        session.user.role = token.role;                           
-    }
+        session.user.role = token.role;
+        session.user.isBanned = token.isBanned;
+      }
       return session;
     },
   },
 
-  // below code is for redirecting user to sign-in page
   pages: {
     signIn: "/sign-in",
   },
 
-  // below code is for jwt , it is used to store user's data in jwt,strategy's job is to store user's data in jwt
   session: {
     strategy: "jwt",
   },
