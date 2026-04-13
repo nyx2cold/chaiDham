@@ -104,7 +104,13 @@ export async function POST(req: Request) {
         }
 
         const order = await OrderModel.create({
-            items,
+            items: items.map((item) => ({
+                menuItemId: item.menuItemId,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                orderDetails: item.orderDetails ?? "",
+            })),
             total,
             type,
             customer: {
@@ -114,6 +120,7 @@ export async function POST(req: Request) {
             },
             status: "pending",
         });
+
 
         return NextResponse.json(
             { success: true, orderId: order._id.toString(), order },

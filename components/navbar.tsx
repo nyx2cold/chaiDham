@@ -7,6 +7,7 @@ import {
   ShoppingCart, LogOut, User, Home, LayoutDashboard,
   UtensilsCrossed, ChevronDown, X, Trash2, Plus, Minus,
   FileText, Coffee, Truck, CheckCircle2, ChevronUp, History, Zap,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/cartContext";
 import { useRouter } from "next/navigation";
+import CartBar from "./menu/CartBar";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -48,7 +50,7 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "text-amber-400 bg-amber-500/10 border-amber-500/25",
   preparing: "text-blue-400 bg-blue-500/10 border-blue-500/25",
   ready: "text-green-400 bg-green-500/10 border-green-500/25",
-  completed: "text-zinc-400 bg-white/[0.03] border-white/[0.06]",
+  completed: "text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/20",
   cancelled: "text-red-400 bg-red-500/10 border-red-500/20",
 };
 
@@ -71,7 +73,7 @@ export default function Navbar() {
   const displayEmail = (session?.user as any)?.email ?? session?.user?.email ?? null;
   const initials = getInitials(displayName);
 
-  const { cartItems, removeFromCart, updateQuantity, cartCount, cartTotal, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, cartCount, cartTotal, clearCart, addToCart } = useCart();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -80,6 +82,7 @@ export default function Navbar() {
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [cartTab, setCartTab] = useState<CartTab>("live");
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   const [placedOrders, setPlacedOrders] = useState<PlacedOrder[]>(() => {
     if (typeof window === "undefined") return [];
@@ -89,12 +92,10 @@ export default function Navbar() {
     } catch { return []; }
   });
 
-  // Persist to localStorage
   useEffect(() => {
     try { localStorage.setItem("chaidham_orders", JSON.stringify(placedOrders)); } catch { }
   }, [placedOrders]);
 
-  // Poll active order statuses every 5s
   useEffect(() => {
     const activeOrders = placedOrders.filter(
       (o) => o.status !== "completed" && o.status !== "cancelled"
@@ -125,7 +126,6 @@ export default function Navbar() {
 
   useEffect(() => setMounted(true), []);
 
-  // Reset to live tab & lock scroll on drawer open
   useEffect(() => {
     if (drawerOpen) {
       setCartTab("live");
@@ -142,12 +142,32 @@ export default function Navbar() {
     };
   }, [drawerOpen]);
 
-  // Hide navbar on dashboard
   if (pathname?.startsWith("/dashboard")) return null;
 
   const toggleNotes = (id: string) => setExpandedNotes((p) => ({ ...p, [id]: !p[id] }));
   const setNote = (id: string, val: string) => setItemNotes((p) => ({ ...p, [id]: val }));
   const toggleCollapse = (id: string) => setCollapsedOrders((p) => ({ ...p, [id]: !p[id] }));
+
+  // ── Reorder handler ──────────────────────────────────────────────────────
+  const handleReorder = async (order: PlacedOrder) => {
+    setReorderingId(order.orderId);
+    try {
+      for (const item of order.items) {
+        // Pass quantity on the item object itself — addToCart takes a single argument
+        addToCart({
+          _id: `reorder-${item.name.toLowerCase().replace(/\s+/g, "-")}`,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        } as any);
+      }
+      // Switch to live tab so user can see the added items
+      setCartTab("live");
+      // Do NOT close the drawer — keep it open on the live tab
+    } finally {
+      setReorderingId(null);
+    }
+  };
 
   const handleCheckout = async () => {
     setIsCheckingOut(true);
@@ -194,37 +214,28 @@ export default function Navbar() {
     (o) => o.status !== "completed" && o.status !== "cancelled"
   ).length;
 
-  const liveOrders = placedOrders.filter((o) => o.status !== "completed" && o.status !== "cancelled");
+  const liveOrders = placedOrders.filter(
+    (o) => !["completed", "cancelled"].includes(o.status)
+  );
   const historyOrders = placedOrders.filter((o) => o.status === "completed" || o.status === "cancelled");
   const visibleOrders = cartTab === "live" ? liveOrders : historyOrders;
 
-  // ─── Order card renderer (shared between tabs) ────────────────────────────
-  function OrderCard({ order }: { order: PlacedOrder }) {
+  // ── Live order tracker card ──────────────────────────────────────────────
+  function LiveOrderCard({ order }: { order: PlacedOrder }) {
     const stepIndex = STATUS_STEPS.findIndex((s) => s.key === order.status);
-    const isCollapsed = collapsedOrders[order.orderId] ?? (cartTab === "history");
-    const isDone = order.status === "completed" || order.status === "cancelled";
+    const isCollapsed = collapsedOrders[order.orderId] ?? false;
 
     return (
       <div className="relative rounded-2xl overflow-hidden">
-        <div className={`absolute inset-0 rounded-2xl backdrop-blur-sm pointer-events-none
-          ${isDone
-            ? "bg-white/[0.03] border border-white/[0.06]"
-            : "bg-gradient-to-br from-amber-500/[0.07] via-white/[0.03] to-white/[0.02] border border-amber-500/20"
-          }
-          shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]`}
-        />
-        {!isDone && (
-          <div className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 h-12 w-24 rounded-full bg-amber-500/10 blur-2xl" />
-        )}
+        <div className="absolute inset-0 rounded-2xl backdrop-blur-sm pointer-events-none bg-gradient-to-br from-amber-500/[0.07] via-white/[0.03] to-white/[0.02] border border-amber-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" />
+        <div className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 h-12 w-24 rounded-full bg-amber-500/10 blur-2xl" />
 
-        {/* Card header / toggle */}
         <button
           onClick={() => toggleCollapse(order.orderId)}
           className="relative w-full flex items-center justify-between px-4 py-3 text-left"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]
-              ${isDone ? "bg-white/[0.04] border-white/[0.08]" : "bg-amber-500/15 border-amber-500/25"}`}>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] bg-amber-500/15 border-amber-500/25">
               {STATUS_STEPS.find((s) => s.key === order.status)?.icon ?? "📦"}
             </div>
             <div className="min-w-0">
@@ -240,80 +251,157 @@ export default function Navbar() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-2">
-            <span className="text-xs font-semibold text-amber-400 [text-shadow:0_0_12px_rgba(245,158,11,0.4)]">
-              ₹{order.total.toFixed(0)}
-            </span>
-            {isCollapsed
-              ? <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
-              : <ChevronUp className="h-3.5 w-3.5 text-zinc-500" />
-            }
+            <span className="text-xs font-semibold text-amber-400 [text-shadow:0_0_12px_rgba(245,158,11,0.4)]">₹{order.total.toFixed(0)}</span>
+            {isCollapsed ? <ChevronDown className="h-3.5 w-3.5 text-zinc-500" /> : <ChevronUp className="h-3.5 w-3.5 text-zinc-500" />}
           </div>
         </button>
 
-        {/* Expandable tracker */}
-        <div style={{
-          maxHeight: isCollapsed ? "0px" : "300px",
-          overflow: "hidden",
-          transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1)",
-        }}>
+        <div style={{ maxHeight: isCollapsed ? "0px" : "300px", overflow: "hidden", transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1)" }}>
           <div className="relative px-4 pb-4 pt-1 border-t border-white/[0.06] space-y-1">
-            {isDone ? (
-              <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border
-                ${order.status === "completed"
-                  ? "bg-emerald-500/[0.06] border-emerald-500/15"
-                  : "bg-red-500/[0.06] border-red-500/15"}`}>
-                <span className="text-lg">{order.status === "completed" ? "✅" : "❌"}</span>
-                <div>
-                  <p className={`text-xs font-semibold ${order.status === "completed" ? "text-emerald-400" : "text-red-400"}`}>
-                    {order.status === "completed" ? "Order Completed" : "Order Cancelled"}
-                  </p>
-                  <p className="text-[10px] text-zinc-600">
-                    {order.type} · {order.placedAt} · ₹{order.total.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              STATUS_STEPS.map((step, i) => {
-                const isDoneStep = i < stepIndex;
-                const isActiveStep = i === stepIndex;
-                return (
-                  <div key={step.key}>
-                    <div className={`flex items-center gap-3 rounded-xl px-3 py-2 border backdrop-blur-sm transition-all duration-300
-                      ${isActiveStep
-                        ? "bg-amber-500/10 border-amber-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-                        : isDoneStep
-                          ? "bg-emerald-500/[0.06] border-emerald-500/15"
-                          : "border-transparent opacity-30"
-                      }`}>
-                      <span className="text-base leading-none">{step.icon}</span>
-                      <div className="flex-1">
-                        <p className={`text-xs font-semibold
-                          ${isActiveStep ? "text-amber-300" : isDoneStep ? "text-emerald-400" : "text-zinc-600"}`}>
-                          {step.label}
-                        </p>
-                        <p className="text-[10px] text-zinc-600">{step.desc}</p>
-                      </div>
-                      {isDoneStep && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
-                      {isActiveStep && <span className="animate-pulse inline-flex rounded-full h-2 w-2 bg-amber-500 shrink-0" />}
+            {STATUS_STEPS.map((step, i) => {
+              const isDoneStep = i < stepIndex;
+              const isActiveStep = i === stepIndex;
+              return (
+                <div key={step.key}>
+                  <div className={`flex items-center gap-3 rounded-xl px-3 py-2 border backdrop-blur-sm transition-all duration-300
+                    ${isActiveStep ? "bg-amber-500/10 border-amber-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                      : isDoneStep ? "bg-emerald-500/[0.06] border-emerald-500/15"
+                        : "border-transparent opacity-30"}`}>
+                    <span className="text-base leading-none">{step.icon}</span>
+                    <div className="flex-1">
+                      <p className={`text-xs font-semibold ${isActiveStep ? "text-amber-300" : isDoneStep ? "text-emerald-400" : "text-zinc-600"}`}>{step.label}</p>
+                      <p className="text-[10px] text-zinc-600">{step.desc}</p>
                     </div>
-                    {i < STATUS_STEPS.length - 1 && (
-                      <div className={`ml-[22px] w-px h-2.5 ${isDoneStep ? "bg-emerald-500/20" : "bg-white/[0.05]"}`} />
-                    )}
+                    {isDoneStep && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                    {isActiveStep && <span className="animate-pulse inline-flex rounded-full h-2 w-2 bg-amber-500 shrink-0" />}
                   </div>
-                );
-              })
-            )}
-
-            {!isDone && (
-              <div className="flex justify-between text-[11px] pt-2 mt-1 border-t border-white/[0.06]">
-                <span className="text-zinc-600 capitalize">{order.type} · {order.placedAt}</span>
-                <span className="text-amber-400 font-semibold">₹{order.total.toFixed(2)}</span>
-              </div>
-            )}
+                  {i < STATUS_STEPS.length - 1 && (
+                    <div className={`ml-[22px] w-px h-2.5 ${isDoneStep ? "bg-emerald-500/20" : "bg-white/[0.05]"}`} />
+                  )}
+                </div>
+              );
+            })}
+            <div className="flex justify-between text-[11px] pt-2 mt-1 border-t border-white/[0.06]">
+              <span className="text-zinc-600 capitalize">{order.type} · {order.placedAt}</span>
+              <span className="text-amber-400 font-semibold">₹{order.total.toFixed(2)}</span>
+            </div>
           </div>
         </div>
       </div>
     );
+  }
+
+  // ── History card — rich detail + reorder ─────────────────────────────────
+  function HistoryOrderCard({ order }: { order: PlacedOrder }) {
+    const isCompleted = order.status === "completed";
+    const isReordering = reorderingId === order.orderId;
+
+    return (
+      <div className={`relative rounded-2xl overflow-hidden border transition-all duration-200
+        ${isCompleted
+          ? "bg-white/[0.03] border-white/[0.07] hover:border-white/[0.11]"
+          : "bg-red-500/[0.03] border-red-500/[0.10] hover:border-red-500/20"
+        }`}>
+
+        {/* Top sheen */}
+        <div className={`absolute inset-x-0 top-0 h-px pointer-events-none
+          ${isCompleted
+            ? "bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"
+            : "bg-gradient-to-r from-transparent via-red-500/15 to-transparent"
+          }`} />
+
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-base border
+              ${isCompleted
+                ? "bg-emerald-500/[0.08] border-emerald-500/20"
+                : "bg-red-500/[0.08] border-red-500/20"
+              }`}>
+              {isCompleted ? "✅" : "❌"}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-white tracking-tight">#{order.orderNumber}</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${STATUS_COLOR[order.status]}`}>
+                  {STATUS_LABEL[order.status]}
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-600 mt-0.5 capitalize">
+                {order.type === "dine-in" ? "🍽 Dine In" : "🛍 Takeaway"} · {order.placedAt}
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right shrink-0">
+            <p className="text-lg font-black text-white leading-none">₹{order.total.toFixed(0)}</p>
+            <p className="text-[10px] text-zinc-600 mt-0.5">{order.items.reduce((s, i) => s + i.quantity, 0)} item{order.items.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""}</p>
+          </div>
+        </div>
+
+        <div className="mx-4 h-px bg-white/[0.05]" />
+
+        {/* Items breakdown */}
+        <div className="px-4 py-2.5 space-y-1.5">
+          {order.items.map((item, idx) => (
+            <div key={idx} className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="shrink-0 flex h-5 min-w-[20px] items-center justify-center rounded-md bg-white/[0.07] border border-white/[0.08] text-[10px] font-bold text-zinc-300 px-1.5">
+                  ×{item.quantity}
+                </span>
+                <span className="text-xs font-medium text-zinc-300 truncate">{item.name}</span>
+              </div>
+              <div className="shrink-0 flex items-center gap-1.5">
+                {item.quantity > 1 && (
+                  <span className="text-[10px] text-zinc-600">₹{item.price} each</span>
+                )}
+                <span className="text-xs font-bold text-white">₹{(item.price * item.quantity).toFixed(0)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mx-4 h-px bg-white/[0.05]" />
+
+        {/* Footer: total + reorder */}
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+            <span className="font-medium text-zinc-400">Total</span>
+            <span className="text-zinc-700 mx-1">·</span>
+            <span className="font-black text-amber-400 text-sm">₹{order.total.toFixed(0)}</span>
+          </div>
+
+          {isCompleted && (
+            <button
+              onClick={() => handleReorder(order)}
+              disabled={isReordering}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold
+                bg-amber-500/10 text-amber-400 border border-amber-500/25
+                hover:bg-amber-500/20 hover:border-amber-500/40 hover:text-amber-300
+                active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+                transition-all duration-150 shadow-[0_0_12px_rgba(245,158,11,0.08)]">
+              {isReordering ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full border-2 border-amber-400/40 border-t-amber-400 animate-spin" />
+                  Adding…
+                </span>
+              ) : (
+                <>
+                  <RotateCcw className="h-3 w-3" />
+                  Reorder
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function OrderCard({ order }: { order: PlacedOrder }) {
+    const isDone = order.status === "completed" || order.status === "cancelled";
+    if (isDone) return <HistoryOrderCard order={order} />;
+    return <LiveOrderCard order={order} />;
   }
 
   return (
@@ -323,7 +411,6 @@ export default function Navbar() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
 
           <Link href="/" className="flex items-center gap-2 group">
-
             <span className="text-xl font-bold text-white tracking-tight">
               <span className="text-amber-500">Chai</span>Dham
             </span>
@@ -351,160 +438,104 @@ export default function Navbar() {
               </button>
             )}
 
-            {/* Auth */}
             {isLoading ? (
               <div className="h-8 w-8 rounded-full bg-black animate-pulse" />
             ) : session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center gap-2 rounded-full outline-none 
-      focus-visible:ring-2 focus-visible:ring-amber-500/60 focus-visible:ring-offset-2 
-      focus-visible:ring-offset-zinc-950 whitespace-nowrap group">
-                    <Avatar className="h-8 w-8 border border-white/10 shadow-sm 
-        group-hover:border-amber-500/40 transition-colors duration-200">
-                      <AvatarFallback className={isAdmin
-                        ? "bg-red-500/90 text-white text-xs font-bold"
-                        : "bg-amber-500 text-zinc-950 text-xs font-bold"}>
+                  <button className="inline-flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 whitespace-nowrap group">
+                    <Avatar className="h-8 w-8 border border-white/10 shadow-sm group-hover:border-amber-500/40 transition-colors duration-200">
+                      <AvatarFallback className={isAdmin ? "bg-red-500/90 text-white text-xs font-bold" : "bg-amber-500 text-zinc-950 text-xs font-bold"}>
                         {initials}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden xs:inline-block sm:inline-block max-w-[120px] truncate 
-        text-sm font-medium text-white leading-none">
+                    <span className="hidden xs:inline-block sm:inline-block max-w-[120px] truncate text-sm font-medium text-white leading-none">
                       {displayName}
                     </span>
-                    {/* Chevron rotates smoothly via CSS, not JS re-render */}
-                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500 transition-transform duration-200 
-        group-data-[state=open]:rotate-180" />
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent
-                  align="end"
-                  sideOffset={6}
-                  collisionPadding={12}
-                  className="w-56 rounded-2xl p-1.5
-      bg-zinc-950 border border-white/[0.09]
-      shadow-[0_8px_32px_rgba(0,0,0,0.6),0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)]
-      origin-top-right
-      data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.97]
-      data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-[0.97]
-      data-[state=open]:slide-in-from-top-1
-      data-[state=closed]:slide-out-to-top-1
-      duration-150 ease-out"
-                  style={{ willChange: "transform, opacity" }}
-                >
-                  {/* User info header */}
+                <DropdownMenuContent align="end" sideOffset={6} collisionPadding={12}
+                  className="w-56 rounded-2xl p-1.5 bg-zinc-950 border border-white/[0.09] shadow-[0_8px_32px_rgba(0,0,0,0.6),0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)] origin-top-right data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.97] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-[0.97] data-[state=open]:slide-in-from-top-1 data-[state=closed]:slide-out-to-top-1 duration-150 ease-out"
+                  style={{ willChange: "transform, opacity" }}>
+
                   <div className="px-3 py-2.5 mb-1 select-none">
                     {isAdmin && (
-                      <span className="inline-flex items-center mb-1.5 px-1.5 py-0.5 rounded-md 
-          text-[10px] font-bold tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
-                        ADMIN
-                      </span>
+                      <span className="inline-flex items-center mb-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">ADMIN</span>
                     )}
-                    <p className="text-zinc-500 text-[11px] uppercase tracking-wider font-medium">
-                      Signed in as
-                    </p>
-                    <p className="text-white font-semibold text-sm truncate mt-0.5">
-                      {displayEmail ?? "Unknown"}
-                    </p>
+                    <p className="text-zinc-500 text-[11px] uppercase tracking-wider font-medium">Signed in as</p>
+                    <p className="text-white font-semibold text-sm truncate mt-0.5">{displayEmail ?? "Unknown"}</p>
                   </div>
 
                   <DropdownMenuSeparator className="bg-white/[0.07] -mx-1.5 my-1" />
 
                   {pathname !== "/" && (
-                    <DropdownMenuItem asChild
-                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
-          transition-colors duration-100
-          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
-          focus:bg-transparent">
-                      <Link href="/" className="flex items-center gap-2.5">
-                        <Home className="h-4 w-4 text-amber-400 shrink-0" />
-                        <span>Home</span>
-                      </Link>
+                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors duration-100 data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white focus:bg-transparent">
+                      <Link href="/" className="flex items-center gap-2.5"><Home className="h-4 w-4 text-amber-400 shrink-0" /><span>Home</span></Link>
                     </DropdownMenuItem>
                   )}
-
                   {pathname !== "/profile" && (
-                    <DropdownMenuItem asChild
-                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
-          transition-colors duration-100
-          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
-          focus:bg-transparent">
-                      <Link href="/profile" className="flex items-center gap-2.5">
-                        <User className="h-4 w-4 text-amber-400 shrink-0" />
-                        <span>Profile</span>
-                      </Link>
+                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors duration-100 data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white focus:bg-transparent">
+                      <Link href="/profile" className="flex items-center gap-2.5"><User className="h-4 w-4 text-amber-400 shrink-0" /><span>Profile</span></Link>
                     </DropdownMenuItem>
                   )}
-
                   {pathname !== "/menu" && (
-                    <DropdownMenuItem asChild
-                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
-          transition-colors duration-100
-          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
-          focus:bg-transparent">
-                      <Link href="/menu" className="flex items-center gap-2.5">
-                        <UtensilsCrossed className="h-4 w-4 text-amber-400 shrink-0" />
-                        <span>Menu</span>
-                      </Link>
+                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors duration-100 data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white focus:bg-transparent">
+                      <Link href="/menu" className="flex items-center gap-2.5"><UtensilsCrossed className="h-4 w-4 text-amber-400 shrink-0" /><span>Menu</span></Link>
                     </DropdownMenuItem>
                   )}
-
                   {isAdmin && pathname !== "/dashboard" && (
-                    <DropdownMenuItem asChild
-                      className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none
-          transition-colors duration-100
-          data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white
-          focus:bg-transparent">
-                      <Link href="/dashboard" className="flex items-center gap-2.5">
-                        <LayoutDashboard className="h-4 w-4 text-amber-400 shrink-0" />
-                        <span>Dashboard</span>
-                      </Link>
+                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-zinc-300 cursor-pointer outline-none transition-colors duration-100 data-[highlighted]:bg-white/[0.06] data-[highlighted]:text-white focus:bg-transparent">
+                      <Link href="/dashboard" className="flex items-center gap-2.5"><LayoutDashboard className="h-4 w-4 text-amber-400 shrink-0" /><span>Dashboard</span></Link>
                     </DropdownMenuItem>
                   )}
 
                   <DropdownMenuSeparator className="bg-white/[0.07] -mx-1.5 my-1" />
 
-                  <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: "/sign-in" })}
-                    className="rounded-xl px-3 py-2 cursor-pointer outline-none text-red-400
-        transition-colors duration-100
-        data-[highlighted]:bg-red-500/[0.08] data-[highlighted]:text-red-300
-        focus:bg-transparent">
-                    <LogOut className="mr-2.5 h-4 w-4 shrink-0" />
-                    Sign out
+                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/sign-in" })}
+                    className="rounded-xl px-3 py-2 cursor-pointer outline-none text-red-400 transition-colors duration-100 data-[highlighted]:bg-red-500/[0.08] data-[highlighted]:text-red-300 focus:bg-transparent">
+                    <LogOut className="mr-2.5 h-4 w-4 shrink-0" />Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/sign-in">
-                  <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/5">Sign in</Button>
-                </Link>
-                <Link href="/sign-up">
-                  <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-medium shadow-lg shadow-amber-900/30">Sign up</Button>
-                </Link>
+                <Link href="/sign-in"><Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/5">Sign in</Button></Link>
+                <Link href="/sign-up"><Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-medium shadow-lg shadow-amber-900/30">Sign up</Button></Link>
               </div>
             )}
           </div>
         </div>
       </nav>
 
-      {/* ─────────────────────── Backdrop ─────────────────────── */}
+      {/* Backdrop */}
       <div
         onClick={() => setDrawerOpen(false)}
-        className={`fixed inset-0 z-50 transition-all duration-300 ${drawerOpen ? "opacity-100 pointer-events-auto bg-black/60 backdrop-blur-sm" : "opacity-0 pointer-events-none"
-          }`}
+        className={`fixed inset-0 z-50 transition-all duration-300 ${drawerOpen ? "opacity-100 pointer-events-auto bg-black/60 backdrop-blur-sm" : "opacity-0 pointer-events-none"}`}
       />
+
+      {/* Bottom Cart Bar — only show when drawer is closed */}
+      {!drawerOpen && (
+        <CartBar
+          cartItems={cartItems}
+          cartCount={cartCount}
+          cartTotal={cartTotal}
+          drawerOpen={drawerOpen}
+          setDrawerOpen={setDrawerOpen}
+          clearCart={clearCart}
+          setItemNotes={setItemNotes}
+          setExpandedNotes={setExpandedNotes}
+        />
+      )}
 
       {/* ─────────────────────── Cart Drawer ─────────────────────── */}
       <aside className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col transition-transform duration-300 ease-in-out ${drawerOpen ? "translate-x-0" : "translate-x-full"}`}>
 
-        {/* Glass shell */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-white/[0.05] backdrop-blur-2xl border-l border-white/[0.10] shadow-[-20px_0_60px_rgba(0,0,0,0.5),inset_1px_0_0_rgba(255,255,255,0.08)] pointer-events-none" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="relative flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-gradient-to-r from-white/[0.06] to-transparent shrink-0">
           <div className="flex items-center gap-2.5">
             <ShoppingCart className="h-4 w-4 text-amber-400" />
@@ -521,47 +552,32 @@ export default function Navbar() {
               </span>
             )}
           </div>
-          <button
-            onClick={() => setDrawerOpen(false)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.10] bg-white/[0.06] text-zinc-400 hover:text-white hover:bg-white/[0.12] transition-colors"
-          >
+          <button onClick={() => setDrawerOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.10] bg-white/[0.06] text-zinc-400 hover:text-white hover:bg-white/[0.12] transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* ── Tab switcher (only show if there are any orders) ── */}
-        {placedOrders.length > 0 && (
+        {/* Tab switcher */}
+        {(placedOrders.length > 0 || cartItems.length === 0) && (
           <div className="relative flex gap-1 mx-4 mt-3 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] shrink-0">
-            <button
-              onClick={() => setCartTab("live")}
+            <button onClick={() => setCartTab("live")}
               className={`flex flex-1 items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200
-                ${cartTab === "live"
-                  ? "bg-amber-500 text-zinc-950 shadow-[0_2px_12px_rgba(245,158,11,0.4)]"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"
-                }`}
-            >
+                ${cartTab === "live" ? "bg-amber-500 text-zinc-950 shadow-[0_2px_12px_rgba(245,158,11,0.4)]" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"}`}>
               <Zap className="h-3 w-3" />
               Live
               {activeOrderCount > 0 && (
-                <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black
-                  ${cartTab === "live" ? "bg-zinc-950/30 text-zinc-950" : "bg-amber-500/20 text-amber-400"}`}>
+                <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black ${cartTab === "live" ? "bg-zinc-950/30 text-zinc-950" : "bg-amber-500/20 text-amber-400"}`}>
                   {activeOrderCount}
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setCartTab("history")}
+            <button onClick={() => setCartTab("history")}
               className={`flex flex-1 items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200
-                ${cartTab === "history"
-                  ? "bg-white/[0.12] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"
-                }`}
-            >
+                ${cartTab === "history" ? "bg-white/[0.12] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"}`}>
               <History className="h-3 w-3" />
               History
               {historyOrders.length > 0 && (
-                <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black
-                  ${cartTab === "history" ? "bg-white/20 text-white" : "bg-white/[0.08] text-zinc-500"}`}>
+                <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black ${cartTab === "history" ? "bg-white/20 text-white" : "bg-white/[0.08] text-zinc-500"}`}>
                   {historyOrders.length}
                 </span>
               )}
@@ -569,26 +585,18 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* ── Scrollable body ── */}
-        <div className="relative flex-1 overflow-y-auto">
+        {/* Scrollable body */}
+        <div className="relative flex-1 overflow-y-auto pb-2">
 
-          {/* ── Live / History orders ── */}
           {placedOrders.length > 0 && (
             <div className="px-4 pt-3 space-y-2.5">
 
-              {visibleOrders.length === 0 && (
+              {visibleOrders.length === 0 && cartItems.length === 0 && (
                 <div className="flex flex-col items-center gap-2 py-8 text-center">
                   {cartTab === "live" ? (
-                    <>
-                      <span className="text-2xl">🍵</span>
-                      <p className="text-zinc-500 text-sm font-medium">No active orders</p>
-                      <p className="text-zinc-700 text-xs">Place an order to track it here</p>
-                    </>
+                    <><span className="text-2xl">🍵</span><p className="text-zinc-500 text-sm font-medium">No active orders</p><p className="text-zinc-700 text-xs">Place an order to track it here</p></>
                   ) : (
-                    <>
-                      <span className="text-2xl">📋</span>
-                      <p className="text-zinc-500 text-sm font-medium">No past orders yet</p>
-                    </>
+                    <><span className="text-2xl">📋</span><p className="text-zinc-500 text-sm font-medium">No past orders yet</p></>
                   )}
                 </div>
               )}
@@ -607,7 +615,7 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* ── Cart items (only on live tab or when no orders yet) ── */}
+          {/* Cart items (only on live tab) */}
           {(cartTab === "live" || placedOrders.length === 0) && (
             <div className="px-4 py-4 space-y-3">
               {cartItems.length === 0 && placedOrders.length === 0 ? (
@@ -619,20 +627,14 @@ export default function Navbar() {
                     <p className="text-white font-semibold text-sm">Your cart is empty</p>
                     <p className="text-zinc-500 text-xs mt-1">Add items from the menu to get started</p>
                   </div>
-                  <button
-                    onClick={() => { router.push("/menu"); setDrawerOpen(false); }}
-                    className="text-amber-400 text-sm hover:text-amber-300 underline underline-offset-2 transition-colors"
-                  >
+                  <button onClick={() => { router.push("/menu"); setDrawerOpen(false); }} className="text-amber-400 text-sm hover:text-amber-300 underline underline-offset-2 transition-colors">
                     Browse menu →
                   </button>
                 </div>
               ) : cartItems.length === 0 && placedOrders.length > 0 ? (
                 <div className="flex flex-col items-center gap-2 py-4 text-center">
                   <p className="text-zinc-600 text-xs">Cart is empty</p>
-                  <button
-                    onClick={() => { router.push("/menu"); setDrawerOpen(false); }}
-                    className="text-amber-400 text-sm hover:text-amber-300 underline underline-offset-2 transition-colors"
-                  >
+                  <button onClick={() => { router.push("/menu"); setDrawerOpen(false); }} className="text-amber-400 text-sm hover:text-amber-300 underline underline-offset-2 transition-colors">
                     + Add more items
                   </button>
                 </div>
@@ -642,58 +644,35 @@ export default function Navbar() {
                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-white/[0.04] backdrop-blur-sm border border-white/[0.08] group-hover:border-white/[0.14] group-hover:from-white/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-200 pointer-events-none" />
                     <div className="flex gap-3 p-3 relative">
                       <div className="h-14 w-14 flex-shrink-0 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center overflow-hidden">
-                        {item.image
-                          ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                          : <UtensilsCrossed className="h-5 w-5 text-zinc-600" />
-                        }
+                        {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <UtensilsCrossed className="h-5 w-5 text-zinc-600" />}
                       </div>
                       <div className="flex flex-1 flex-col gap-1 min-w-0">
                         <p className="text-sm font-semibold text-white truncate">{item.name}</p>
                         <p className="text-xs font-bold text-amber-400">₹{item.price}</p>
                         <div className="flex items-center gap-2 mt-auto">
-                          <button onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.06] hover:bg-white/[0.14] border border-white/[0.10] text-zinc-300 hover:text-white transition-all">
-                            <Minus className="h-3 w-3" />
-                          </button>
+                          <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.06] hover:bg-white/[0.14] border border-white/[0.10] text-zinc-300 hover:text-white transition-all"><Minus className="h-3 w-3" /></button>
                           <span className="w-5 text-center text-sm font-bold text-white">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.06] hover:bg-white/[0.14] border border-white/[0.10] text-zinc-300 hover:text-white transition-all">
-                            <Plus className="h-3 w-3" />
-                          </button>
+                          <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.06] hover:bg-white/[0.14] border border-white/[0.10] text-zinc-300 hover:text-white transition-all"><Plus className="h-3 w-3" /></button>
                         </div>
                       </div>
                       <div className="flex flex-col items-end justify-between flex-shrink-0">
-                        <button onClick={() => removeFromCart(item._id)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-500/[0.18] bg-red-500/[0.07] text-red-500/50 hover:text-red-400 hover:bg-red-500/[0.18] transition-all">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <button onClick={() => removeFromCart(item._id)} className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-500/[0.18] bg-red-500/[0.07] text-red-500/50 hover:text-red-400 hover:bg-red-500/[0.18] transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
                         <p className="text-xs font-bold text-zinc-300">₹{(item.price * item.quantity).toFixed(2)}</p>
                       </div>
                     </div>
 
                     <div className="relative border-t border-white/[0.06]">
-                      <button onClick={() => toggleNotes(item._id)}
-                        className="flex w-full items-center justify-between px-3 py-2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                      <button onClick={() => toggleNotes(item._id)} className="flex w-full items-center justify-between px-3 py-2 text-zinc-500 hover:text-zinc-300 transition-colors">
                         <span className="flex items-center gap-1.5 text-[11px] font-medium">
                           <FileText className="h-3 w-3" />
                           {itemNotes[item._id] ? "Edit order details" : "Add order details"}
                         </span>
                         <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${expandedNotes[item._id] ? "rotate-180" : ""}`} />
                       </button>
-                      <div style={{
-                        maxHeight: expandedNotes[item._id] ? "120px" : "0px",
-                        opacity: expandedNotes[item._id] ? 1 : 0,
-                        overflow: "hidden",
-                        transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease",
-                      }}>
+                      <div style={{ maxHeight: expandedNotes[item._id] ? "120px" : "0px", opacity: expandedNotes[item._id] ? 1 : 0, overflow: "hidden", transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
                         <div className="px-3 pb-3 pt-0.5">
-                          <textarea
-                            value={itemNotes[item._id] ?? ""}
-                            onChange={(e) => setNote(item._id, e.target.value)}
-                            placeholder="e.g. Less sugar, extra ginger, no ice…"
-                            rows={2}
-                            className="w-full resize-none rounded-xl px-3 py-2 text-xs bg-white/[0.05] border border-white/[0.08] text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40 transition-all"
-                          />
+                          <textarea value={itemNotes[item._id] ?? ""} onChange={(e) => setNote(item._id, e.target.value)} placeholder="e.g. Less sugar, extra ginger, no ice…" rows={2}
+                            className="w-full resize-none rounded-xl px-3 py-2 text-xs bg-white/[0.05] border border-white/[0.08] text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40 transition-all" />
                         </div>
                       </div>
                       {!expandedNotes[item._id] && itemNotes[item._id] && (
@@ -707,9 +686,9 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* ── Footer (cart checkout) ── */}
+        {/* Footer checkout */}
         {cartItems.length > 0 && cartTab === "live" && (
-          <div className="relative px-4 pt-4 pb-5 space-y-3 shrink-0">
+          <div className="relative px-4 pt-4 pb-3 space-y-3 shrink-0">
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-white/[0.03] to-transparent backdrop-blur-sm border-t border-white/[0.08] pointer-events-none" />
             <div className="relative flex items-center justify-between">
               <span className="text-sm text-zinc-400">Subtotal</span>
@@ -718,31 +697,21 @@ export default function Navbar() {
             <p className="relative text-[11px] text-zinc-600">Taxes and delivery calculated at checkout</p>
 
             <div className="relative flex rounded-xl overflow-hidden border border-white/[0.10] bg-white/[0.03]">
-              <button
-                onClick={() => setOrderType("dine-in")}
+              <button onClick={() => setOrderType("dine-in")}
                 className={`flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all duration-200
                   ${orderType === "dine-in" ? "bg-amber-500 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.3)]" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"}`}>
                 <Coffee className="h-4 w-4" /> Dine In
               </button>
-              <button
-                onClick={() => setOrderType("takeaway")}
+              <button onClick={() => setOrderType("takeaway")}
                 className={`flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all duration-200
                   ${orderType === "takeaway" ? "bg-amber-500 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.3)]" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"}`}>
                 <Truck className="h-4 w-4" /> Takeaway
               </button>
             </div>
 
-            <button
-              onClick={handleCheckout}
-              disabled={isCheckingOut}
-              className="relative w-full py-3 rounded-xl font-bold text-sm text-zinc-950 bg-amber-500 hover:bg-amber-400 shadow-[0_4px_24px_rgba(245,158,11,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150"
-            >
-              {isCheckingOut
-                ? "Placing order…"
-                : placedOrders.length > 0
-                  ? "Place Another Order"
-                  : "Proceed to Checkout"
-              }
+            <button onClick={handleCheckout} disabled={isCheckingOut}
+              className="relative w-full py-3 rounded-xl font-bold text-sm text-zinc-950 bg-amber-500 hover:bg-amber-400 shadow-[0_4px_24px_rgba(245,158,11,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150">
+              {isCheckingOut ? "Placing order…" : placedOrders.length > 0 ? "Place Another Order" : "Proceed to Checkout"}
             </button>
           </div>
         )}
