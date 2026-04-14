@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IOrder extends Document {
+export interface Order extends Document {
   orderNumber: number;
   customer: {
     userId: string;
@@ -21,7 +21,7 @@ export interface IOrder extends Document {
   updatedAt: Date;
 }
 
-const OrderSchema = new Schema<IOrder>(
+const OrderSchema = new Schema<Order>(
   {
     orderNumber: { type: Number, unique: true },
     customer: {
@@ -61,4 +61,4 @@ OrderSchema.pre("save", async function () {
 });
 
 export default mongoose.models.Order ||
-  mongoose.model<IOrder>("Order", OrderSchema);
+  mongoose.model<Order>("Order", OrderSchema);

@@ -13,7 +13,7 @@ export interface Order {
     _id: string;
     orderNumber: number;
     customer: { name: string; email: string };
-    items: { name: string; quantity: number; price: number; notes?: string }[];
+    items: { name: string; quantity: number; price: number; orderDetails?: string }[];
     total: number;
     type: "dine-in" | "takeaway";
     status: OrderStatus;
@@ -329,6 +329,11 @@ export function OrdersTable({ compact }: Props) {
                                                         <span className="text-xs text-zinc-500 line-clamp-1">
                                                             {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
                                                         </span>
+                                                        {order.items.some((i) => i.orderDetails) && (
+                                                            <span className="flex items-center gap-1 mt-0.5 text-[10px] text-amber-400/70 font-medium">
+                                                                <span>📝</span> has notes
+                                                            </span>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <span className="text-xs font-black tabular-nums text-white">
@@ -550,19 +555,27 @@ export function OrdersTable({ compact }: Props) {
                                 </p>
                                 <div className="divide-y divide-white/[0.05]">
                                     {selectedOrder.items.map((item, i) => (
-                                        <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-white font-medium">
-                                                    {item.name}
-                                                    <span className="text-zinc-500 font-normal ml-1">×{item.quantity}</span>
-                                                </p>
-                                                {item.notes && (
-                                                    <p className="text-[11px] text-zinc-600 italic mt-0.5">"{item.notes}"</p>
-                                                )}
+                                        <div key={i} className="px-4 py-2.5">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm text-white font-medium">
+                                                        {item.name}
+                                                        <span className="text-zinc-500 font-normal ml-1">×{item.quantity}</span>
+                                                    </p>
+                                                </div>
+                                                <span className="text-xs font-semibold text-amber-400 shrink-0">
+                                                    ₹{item.price * item.quantity}
+                                                </span>
                                             </div>
-                                            <span className="text-xs font-semibold text-amber-400 ml-3">
-                                                ₹{item.price * item.quantity}
-                                            </span>
+                                            {item.orderDetails && (
+                                                <div className="flex items-start gap-1.5 mt-1.5 px-2.5 py-1.5 rounded-lg
+                    bg-amber-500/[0.07] border border-amber-500/[0.15]">
+                                                    <span className="text-[11px] text-amber-400/80 shrink-0 mt-px">📝</span>
+                                                    <p className="text-[11px] text-amber-300/80 italic leading-snug">
+                                                        {item.orderDetails}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

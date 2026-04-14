@@ -177,7 +177,7 @@ export default function Navbar() {
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        notes: itemNotes[item._id] ?? "",
+        orderDetails: itemNotes[item._id] ?? "",
       }));
 
       const res = await fetch("/api/orders", {
