@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
     >
       <AppSidebar variant="inset" />
 
-      <SidebarInset className="bg-zinc-950 min-h-screen">
+      <SidebarInset className="bg-zinc-950 ">
 
         {/* ── Top bar ── */}
         <header className="sticky top-0 z-40 flex h-14 items-center justify-between
@@ -98,7 +98,7 @@ export default function AdminDashboardPage() {
         </header>
 
         {/* ── Page content ── */}
-        <main className="flex flex-col gap-6 p-4 md:p-6">
+        <main className="flex flex-col gap-6 p-4 md:p-6 pb-0 md:pb-0">
 
           {/* ── Core tabs ── */}
           {/* {tab === "overview" && (

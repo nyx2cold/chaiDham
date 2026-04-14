@@ -30,11 +30,12 @@ export async function GET() {
             { $limit: 50 },
         ]);
 
+
         // Pull browniePoints from User model for each customer
         const emails = orderStats.map((s) => s._id);
         const users = await UserModel.find(
             { email: { $in: emails } },
-            { email: 1, browniePoints: 1, createdAt: 1, isBanned: 1 }
+            { email: 1, browniePoints: 1, createdAt: 1, isBanned: 1, phone: 1 }
         ).lean();
 
         const userMap = new Map(users.map((u) => [u.email, u]));
@@ -45,6 +46,7 @@ export async function GET() {
                 rank: i + 1,
                 email: s._id,
                 name: s.name,
+                phone: (user as any)?.phone ?? null,
                 totalSpent: s.totalSpent,
                 orderCount: s.orderCount,
                 lastOrderAt: s.lastOrderAt,
