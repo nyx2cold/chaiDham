@@ -1,7 +1,7 @@
 "use client";
 
 import { LayoutDashboard, ShoppingBag, UtensilsCrossed, BarChart3, Bell } from "lucide-react";
-import type { AdminTab } from "@/app/dashboard/page";
+import type { AdminTab } from "@/app/dashboard/AdminDashboardClient";
 
 const TABS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
     // { key: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4" /> },
