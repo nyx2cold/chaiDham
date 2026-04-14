@@ -12,6 +12,7 @@ interface Customer {
     rank: number;
     email: string;
     name: string;
+    phone?: string;
     totalSpent: number;
     orderCount: number;
     lastOrderAt: string;
@@ -70,29 +71,12 @@ function CustomerDetailsModal({ customer, onClose }: { customer: Customer; onClo
     const podium = PODIUM_CONFIG.find((p) => p.rank === customer.rank);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 mb-[-20px]"
             style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
             onClick={onClose}>
-            <div className="relative w-full max-w-md rounded-2xl overflow-hidden"
-                style={{ ...glass, boxShadow: "0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.09)" }}
+            <div className="relative w-full max-w-md rounded-2xl overflow-hidden my-auto "
+                style={{ ...glass, overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.09)" }}
                 onClick={(e) => e.stopPropagation()}>
-
-                {/* Glow */}
-                <div className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 w-64 h-32 rounded-full blur-3xl opacity-20"
-                    style={{ background: "rgba(245,158,11,0.6)" }} />
-
-                {/* Header */}
-                <div className="relative flex items-center justify-between px-6 py-4 border-b border-white/[0.07]"
-                    style={{ background: "rgba(255,255,255,0.02)" }}>
-                    <div className="flex items-center gap-2">
-                        <Info className="h-4 w-4 text-amber-400" />
-                        <span className="text-sm font-bold text-white">Customer Details</span>
-                    </div>
-                    <button onClick={onClose}
-                        className="h-7 w-7 flex items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.10] transition-all">
-                        <X className="h-3.5 w-3.5" />
-                    </button>
-                </div>
 
                 {/* Avatar + Name */}
                 <div className="flex flex-col items-center pt-7 pb-5 px-6">
@@ -129,7 +113,7 @@ function CustomerDetailsModal({ customer, onClose }: { customer: Customer; onClo
                 </div>
 
                 {/* Stats grid */}
-                <div className="px-6 pb-6 grid grid-cols-2 gap-3">
+                <div className="px-6 pb-6 grid grid-cols-2 gap-3 h-auto">
                     {[
                         { label: "Total Spent", value: `₹${customer.totalSpent.toLocaleString("en-IN")}`, icon: <IndianRupee className="h-3.5 w-3.5 text-amber-400" />, color: "text-amber-400" },
                         { label: "Total Orders", value: String(customer.orderCount), icon: <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />, color: "text-emerald-400" },
@@ -157,6 +141,15 @@ function CustomerDetailsModal({ customer, onClose }: { customer: Customer; onClo
                     <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold flex-shrink-0">Email</span>
                     <span className="text-xs font-semibold text-zinc-300 truncate">{customer.email}</span>
                 </div>
+
+                {/* Phone row */}
+                {customer.phone && (
+                    <div className="mx-6 mb-6 rounded-xl px-4 py-3 border border-white/[0.06] flex items-center gap-3"
+                        style={{ background: "rgba(255,255,255,0.03)" }}>
+                        <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold flex-shrink-0">Phone</span>
+                        <span className="text-xs font-semibold text-zinc-300 truncate">{customer.phone}</span>
+                    </div>
+                )}
             </div>
         </div>
     );
