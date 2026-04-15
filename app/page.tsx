@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import {
   motion, useScroll, useTransform, AnimatePresence,
-  useInView, useMotionValue, useSpring,
+  useInView, useMotionValue, useSpring, type Variants,
 } from "framer-motion"
 import {
   ChevronRight, UtensilsCrossed, Clock, Star, Package,
@@ -44,24 +44,24 @@ const stats = [
 
 // ─── VARIANTS ────────────────────────────────────────────────────────────────
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
-  visible: (delay = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const, delay } }),
+  visible: (delay = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeInOut", delay } }),
 }
 
-const fadeIn = {
+const fadeIn: Variants = {
   hidden: { opacity: 0 },
   visible: (delay = 0) => ({ opacity: 1, transition: { duration: 0.6, delay } }),
 }
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
 }
 
-const cardVariant = {
+const cardVariant: Variants = {
   hidden: { opacity: 0, y: 32, scale: 0.97 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: "easeInOut" } },
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -104,6 +104,12 @@ function SteamLines({ count = 10 }: { count?: number }) {
 
 // ─── MENU CAROUSEL ───────────────────────────────────────────────────────────
 
+const slideVariants: Variants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0, scale: 0.98 }),
+  center: { x: 0, opacity: 1, scale: 1, transition: { duration: 0.45, ease: "easeInOut" } },
+  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0, scale: 0.98, transition: { duration: 0.3 } }),
+}
+
 function MenuCarousel() {
   const [active, setActive] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -124,12 +130,6 @@ function MenuCarousel() {
   }, [active])
 
   const item = menuHighlights[active]
-
-  const slideVariants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0, scale: 0.98 }),
-    center: { x: 0, opacity: 1, scale: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
-    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0, scale: 0.98, transition: { duration: 0.3 } }),
-  }
 
   return (
     <div
@@ -218,6 +218,12 @@ function MenuCarousel() {
 
 // ─── TESTIMONIAL CAROUSEL ────────────────────────────────────────────────────
 
+const testimonialVariants: Variants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.45, ease: "easeInOut" } },
+  exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.3 } }),
+}
+
 function TestimonialCarousel() {
   const [active, setActive] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -227,18 +233,12 @@ function TestimonialCarousel() {
     return () => clearInterval(t)
   }, [])
 
-  const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
-    center: { x: 0, opacity: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
-    exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.3 } }),
-  }
-
   return (
     <div className="relative max-w-xl mx-auto">
       <div className="relative rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] min-h-[160px]">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
         <AnimatePresence mode="wait" custom={direction}>
-          <motion.div key={active} custom={direction} variants={variants} initial="enter" animate="center" exit="exit"
+          <motion.div key={active} custom={direction} variants={testimonialVariants} initial="enter" animate="center" exit="exit"
             className="px-8 py-8">
             <div className="flex gap-1 mb-4">
               {Array.from({ length: testimonials[active].rating }).map((_, i) => (
@@ -304,6 +304,36 @@ function AnimatedStat({ value, suffix, label }: { value: string; suffix: string;
         <span className="text-amber-500/80 text-xl">{suffix}</span>
       </p>
       <p className="text-[11px] text-zinc-500 mt-1 uppercase tracking-widest font-medium">{label}</p>
+    </motion.div>
+  )
+}
+
+// ─── FEATURE CARDS (extracted to own component to fix hook-in-render bug) ────
+
+function FeatureCards() {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: "-60px" })
+  return (
+    <motion.div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-5"
+      initial="hidden" animate={isInView ? "visible" : "hidden"} variants={staggerContainer}>
+      {features.map(({ icon: Icon, title, desc, stat, statLabel }) => (
+        <motion.div key={title} variants={cardVariant}
+          whileHover={{ y: -4, borderColor: "rgba(245,158,11,0.25)" }}
+          className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-6 overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors duration-300">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <motion.div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent pointer-events-none"
+            initial={{ opacity: 0 }} whileHover={{ opacity: 1 }} transition={{ duration: 0.3 }} />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 mb-5">
+            <Icon className="h-5 w-5 text-amber-400" />
+          </div>
+          <h3 className="text-white font-bold text-lg mb-2">{title}</h3>
+          <p className="text-zinc-500 text-sm leading-relaxed mb-5">{desc}</p>
+          <div className="inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/[0.08] border border-amber-500/[0.15]">
+            <span className="text-amber-400 font-black text-lg tabular-nums">{stat}</span>
+            <span className="text-zinc-500 text-[11px] font-medium">{statLabel}</span>
+          </div>
+        </motion.div>
+      ))}
     </motion.div>
   )
 }
@@ -427,35 +457,7 @@ export default function Page() {
             <p className="text-amber-500 text-xs font-bold uppercase tracking-[0.3em] mb-3">Why ChaiDham</p>
             <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">More than just chai</h2>
           </RevealSection>
-
-          {/* Feature cards with staggered scroll reveal */}
-          {(() => {
-            const ref = useRef(null)
-            const isInView = useInView(ref, { once: true, margin: "-60px" })
-            return (
-              <motion.div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-5"
-                initial="hidden" animate={isInView ? "visible" : "hidden"} variants={staggerContainer}>
-                {features.map(({ icon: Icon, title, desc, stat, statLabel }) => (
-                  <motion.div key={title} variants={cardVariant}
-                    whileHover={{ y: -4, borderColor: "rgba(245,158,11,0.25)" }}
-                    className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-6 overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors duration-300">
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    <motion.div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent pointer-events-none"
-                      initial={{ opacity: 0 }} whileHover={{ opacity: 1 }} transition={{ duration: 0.3 }} />
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 mb-5">
-                      <Icon className="h-5 w-5 text-amber-400" />
-                    </div>
-                    <h3 className="text-white font-bold text-lg mb-2">{title}</h3>
-                    <p className="text-zinc-500 text-sm leading-relaxed mb-5">{desc}</p>
-                    <div className="inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/[0.08] border border-amber-500/[0.15]">
-                      <span className="text-amber-400 font-black text-lg tabular-nums">{stat}</span>
-                      <span className="text-zinc-500 text-[11px] font-medium">{statLabel}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )
-          })()}
+          <FeatureCards />
         </div>
       </section>
 
